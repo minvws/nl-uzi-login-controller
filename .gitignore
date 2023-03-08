@@ -1,0 +1,11 @@
+__pycache__
+.DS_Store
+.fleet
+app.egg-info
+.venv
+*.conf
+*.json
+*.bak
+*.crt
+*.key
+*.pub

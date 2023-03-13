@@ -36,8 +36,11 @@ coverage-badge==1.1.0
     # via app (setup.py)
 cryptography==39.0.2
     # via
+    #   jwcrypto
     #   types-pyopenssl
     #   types-redis
+deprecated==1.2.13
+    # via jwcrypto
 dill==0.3.6
     # via pylint
 exceptiongroup==1.1.0
@@ -59,6 +62,8 @@ iniconfig==2.0.0
 isort==5.12.0
     # via pylint
 jinja2==3.1.2
+    # via app (setup.py)
+jwcrypto==1.4.2
     # via app (setup.py)
 lazy-object-proxy==1.9.0
     # via astroid
@@ -140,4 +145,6 @@ urllib3==1.26.14
 uvicorn==0.20.0
     # via app (setup.py)
 wrapt==1.15.0
-    # via astroid
+    # via
+    #   astroid
+    #   deprecated

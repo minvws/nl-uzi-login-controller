@@ -7,6 +7,7 @@ requirements = [
     "requests",
     "redis",
     "jinja2",
+    "jwcrypto"
 ]
 
 setup(

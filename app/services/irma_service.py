@@ -7,6 +7,8 @@ from typing import Union
 import requests
 from fastapi.responses import JSONResponse
 from redis import Redis
+from jwcrypto.jwt import JWT
+from jwcrypto.jwk import JWK
 
 from app.exceptions import (
     IrmaServerException,
@@ -37,20 +39,34 @@ class IrmaService:
         irma_disclose_prefix: str,
         redis_namespace: str,
         expires_in_s: int,
+        jwt_issuer: str,
+        jwt_issuer_crt_path: str,
+        jwt_audience: str
     ):
         self._redis_client = redis_client
         self._irma_internal_server_url = irma_internal_server_url
         self._irma_disclose_prefix = irma_disclose_prefix
         self._redis_namespace = redis_namespace
         self._expires_in_s = expires_in_s
+        self._jwt_issuer = jwt_issuer
+        self._jwt_audience = jwt_audience
+        with open(jwt_issuer_crt_path, encoding="utf-8") as file:
+            self._jwt_issuer_crt_path = JWK.from_pem(file.read().encode("utf-8"))
 
-    def create_session(self, session_request: SessionRequest):
+    def create_session(self, raw_jwt: str):
         exchange_token = rand_pass(64)
         discloses = []
-        for item in session_request.requested_disclosures:
-            disclose = {"type": f"{self._irma_disclose_prefix}.{item.disclose_type}"}
-            if item.disclose_value:
-                disclose["value"] = item.disclose_value
+        print(raw_jwt)
+        jwt = JWT(jwt=raw_jwt, key=self._jwt_issuer_crt_path, check_claims={
+            "iss": self._jwt_issuer,
+            "aud": self._jwt_audience
+        })
+        requested_disclosures = json.loads(jwt.claims)["disclosures"]
+        print(requested_disclosures)
+        for item in requested_disclosures:
+            disclose = {"type": f"{self._irma_disclose_prefix}.{item['disclose_type']}"}
+            if "disclose_value" in item:
+                disclose["value"] = item['disclose_value']
             discloses.append(disclose)
         irma_session_request = {
             "@context": "https://irma.app/ld/request/disclosure/v2",

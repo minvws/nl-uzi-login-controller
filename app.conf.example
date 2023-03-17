@@ -1,0 +1,30 @@
+[app]
+redirect_url = https://localhost:8006/continue
+
+[redis]
+# Connecting to the redis server through parameters:
+host = localhost
+port = 6379
+namespace = nl-uzi-irma-api
+expire = 60
+
+[irma]
+irma_internal_server_url = http://localhost:8088
+irma_disclose_prefix = irma-demo.uzipoc-cibg.uzi-2
+
+[uvicorn]
+# The host to be running on
+host = 0.0.0.0
+port = 8001
+
+# Are we running in debug mode? turns on auto-reload on code changes
+reload = True
+workers = 1
+
+# Should we create an SSL connection through uvicorn?
+use_ssl = False
+
+# Setting for the SSL connection when enabled, defined by the use_ssl setting.
+base_dir = secrets/ssl
+cert_file = server.crt
+key_file = server.key

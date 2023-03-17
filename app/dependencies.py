@@ -20,5 +20,5 @@ irma_service_ = IrmaService(
     expires_in_s=int(config["redis"]["expire"]),
     jwt_issuer=config["session"]["jwt_issuer"],
     jwt_issuer_crt_path=config["session"]["jwt_issuer_crt_path"],
-    jwt_audience=config["session"]["jwt_audience"]
+    jwt_audience=config["session"]["jwt_audience"],
 )

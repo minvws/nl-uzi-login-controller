@@ -15,8 +15,6 @@ from app.exceptions import (
     IrmaSessionExpired,
     IrmaSessionNotCompleted,
 )
-from app.models import SessionRequest
-
 
 REDIS_IRMA_SESSION_KEY = "irma_session"
 
@@ -41,7 +39,7 @@ class IrmaService:
         expires_in_s: int,
         jwt_issuer: str,
         jwt_issuer_crt_path: str,
-        jwt_audience: str
+        jwt_audience: str,
     ):
         self._redis_client = redis_client
         self._irma_internal_server_url = irma_internal_server_url
@@ -57,16 +55,17 @@ class IrmaService:
         exchange_token = rand_pass(64)
         discloses = []
         print(raw_jwt)
-        jwt = JWT(jwt=raw_jwt, key=self._jwt_issuer_crt_path, check_claims={
-            "iss": self._jwt_issuer,
-            "aud": self._jwt_audience
-        })
+        jwt = JWT(
+            jwt=raw_jwt,
+            key=self._jwt_issuer_crt_path,
+            check_claims={"iss": self._jwt_issuer, "aud": self._jwt_audience},
+        )
         requested_disclosures = json.loads(jwt.claims)["disclosures"]
         print(requested_disclosures)
         for item in requested_disclosures:
             disclose = {"type": f"{self._irma_disclose_prefix}.{item['disclose_type']}"}
             if "disclose_value" in item:
-                disclose["value"] = item['disclose_value']
+                disclose["value"] = item["disclose_value"]
             discloses.append(disclose)
         irma_session_request = {
             "@context": "https://irma.app/ld/request/disclosure/v2",

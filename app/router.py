@@ -3,7 +3,6 @@ from fastapi.templating import Jinja2Templates
 
 from app.dependencies import irma_service_, redirect_url_
 from app.services.irma_service import IrmaService
-from app.models import SessionRequest
 
 router = APIRouter()
 templates = Jinja2Templates(directory="jinja2")
@@ -15,7 +14,7 @@ async def session(
     irma_service: IrmaService = Depends(lambda: irma_service_),
 ):
     request_body = await request.body()
-    if type(request_body) == bytes:
+    if isinstance(request_body, bytes):
         return irma_service.create_session(request_body.decode("utf-8"))
     raise HTTPException(status_code=403, detail="No valid content provided")
 

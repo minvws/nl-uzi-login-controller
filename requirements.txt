@@ -103,7 +103,7 @@ pytest==7.2.1
     # via app (setup.py)
 pyyaml==6.0
     # via bandit
-redis==4.5.3
+redis==4.5.4
     # via app (setup.py)
 requests==2.28.2
     # via app (setup.py)

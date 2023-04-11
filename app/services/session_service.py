@@ -10,12 +10,13 @@ from fastapi.responses import JSONResponse
 from redis import Redis
 from jwcrypto.jwt import JWT
 from jwcrypto.jwk import JWK
-from starlette.responses import RedirectResponse
+from starlette.responses import RedirectResponse, Response
 from starlette.templating import Jinja2Templates
 
 from app.exceptions import (
     IrmaSessionExpired,
     IrmaSessionNotCompleted,
+    IrmaServerException,
 )
 from app.models import Session, SessionType, SessionStatus
 from app.services.irma_service import IrmaService
@@ -62,14 +63,24 @@ class SessionService:
         jwt = JWT(
             jwt=raw_jwt,
             key=self._jwt_issuer_crt_path,
-            check_claims={"iss": self._jwt_issuer, "aud": self._jwt_audience, "exp": time.time(), "nbf": time.time()},
+            check_claims={
+                "iss": self._jwt_issuer,
+                "aud": self._jwt_audience,
+                "exp": time.time(),
+                "nbf": time.time(),
+            },
         )
         claims = json.loads(jwt.claims)
-        session = Session(exchange_token=rand_pass(64), session_status=SessionStatus.INITIALIZED, **claims)
-        
+        session = Session(
+            exchange_token=rand_pass(64),
+            session_status=SessionStatus.INITIALIZED,
+            **claims,
+        )
+
         if session.session_type == SessionType.IRMA:
             session.irma_disclose_response = self._irma_service.create_disclose_session(
-                json.loads(jwt.claims)["disclosures"])
+                json.loads(jwt.claims)["disclosures"]
+            )
 
         self._redis_client.set(
             f"{self._redis_namespace}:{REDIS_IRMA_SESSION_KEY}:{session.exchange_token}",
@@ -80,6 +91,8 @@ class SessionService:
 
     def irma(self, exchange_token: str):
         session = self._token_to_session(exchange_token)
+        if session.irma_disclose_response is None:
+            raise IrmaServerException()
         irma_session = json.loads(session.irma_disclose_response)
         return JSONResponse(irma_session["sessionPtr"])
 
@@ -99,11 +112,14 @@ class SessionService:
 
     def _update_status(self, session: Session):
         if session.session_status == SessionStatus.DONE:
-            return JSONResponse(session.session_status)
+            return
 
         if session.session_type == SessionType.IRMA:
+            if session.irma_disclose_response is None:
+                raise IrmaServerException()
             irma_session_result = self._irma_service.fetch_disclose_result(
-                json.loads(session.irma_disclose_response)['token'])
+                json.loads(session.irma_disclose_response)["token"]
+            )
             if irma_session_result["status"] == "DONE":
                 session.irma_session_result = irma_session_result
                 self._redis_client.set(
@@ -113,12 +129,14 @@ class SessionService:
                 )
                 session.session_status = SessionStatus.DONE
 
-    def result(self, exchange_token):
+    def result(self, exchange_token) -> Response:
         session = self._token_to_session(exchange_token)
         self._update_status(session)
         if session.session_status != SessionStatus.DONE:
             raise IrmaSessionNotCompleted()
         if session.session_type == SessionType.IRMA:
+            if session.irma_session_result is None:
+                raise IrmaServerException()
             disclosed_response = {}
             for item in session.irma_session_result["disclosed"][0]:
                 disclosed_response[
@@ -132,7 +150,10 @@ class SessionService:
             f"{self._redis_namespace}:{REDIS_IRMA_SESSION_KEY}:{exchange_token}",
         )
         if not session_str:
-            return RedirectResponse(url=f"{redirect_url}?state={state}&error=session%20not%20found", status_code=403)
+            return RedirectResponse(
+                url=f"{redirect_url}?state={state}&error=session%20not%20found",
+                status_code=403,
+            )
         session = Session.parse_raw(session_str)
 
         return templates.TemplateResponse(

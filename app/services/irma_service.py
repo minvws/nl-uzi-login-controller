@@ -14,14 +14,16 @@ logger = logging.getLogger(__name__)
 
 class IrmaService:
     def __init__(
-            self,
-            irma_internal_server_url: str,
-            irma_disclose_prefix: str,
+        self,
+        irma_internal_server_url: str,
+        irma_disclose_prefix: str,
     ):
         self._irma_internal_server_url = irma_internal_server_url
         self._irma_disclose_prefix = irma_disclose_prefix
 
-    def create_disclose_session(self, requested_disclosures: List[Dict[str, str]]) -> str:
+    def create_disclose_session(
+        self, requested_disclosures: List[Dict[str, str]]
+    ) -> str:
         discloses = []
         for item in requested_disclosures:
             disclose = {"type": f"{self._irma_disclose_prefix}.{item['disclose_type']}"}
@@ -49,8 +51,7 @@ class IrmaService:
 
     def fetch_disclose_result(self, token: str):
         irma_response = requests.get(
-            f"{self._irma_internal_server_url}"
-            + f"/session/{token}/result",
+            f"{self._irma_internal_server_url}" + f"/session/{token}/result",
             timeout=30,
         )
         if irma_response.status_code >= 400:

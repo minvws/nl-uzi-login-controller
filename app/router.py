@@ -24,20 +24,21 @@ async def session(
 @router.get("/session/{exchange_token}/status")
 async def session_status(
     exchange_token: str,
-    irma_service: SessionService = Depends(lambda: session_service_)
+    irma_service: SessionService = Depends(lambda: session_service_),
 ):
     """
     Get the status of a session
     """
     try:
         return irma_service.status(exchange_token)
-    except IrmaSessionExpired:
-        raise HTTPException(status_code=404, detail="Session expired")
+    except IrmaSessionExpired as exp:
+        raise HTTPException(status_code=404, detail="Session expired") from exp
 
 
 @router.get("/session/{exchange_token}/irma")
 def irma_session(
-    exchange_token: str, irma_service: SessionService = Depends(lambda: session_service_)
+    exchange_token: str,
+    irma_service: SessionService = Depends(lambda: session_service_),
 ):
     """
     Get the IRMA response from a session
@@ -47,7 +48,8 @@ def irma_session(
 
 @router.get("/session/{exchange_token}/result")
 def result(
-    exchange_token: str, irma_service: SessionService = Depends(lambda: session_service_)
+    exchange_token: str,
+    irma_service: SessionService = Depends(lambda: session_service_),
 ):
     """
     Fetch the session result
@@ -61,7 +63,7 @@ def page(
     state: str,
     request: Request,
     redirect_url: str = Depends(lambda: redirect_url_),
-    irma_service: SessionService = Depends(lambda: session_service_)
+    irma_service: SessionService = Depends(lambda: session_service_),
 ):
     """
     Fetch the login page

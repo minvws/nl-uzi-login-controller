@@ -14,7 +14,7 @@ _redis_client = Redis(host=config["redis"]["host"], port=int(config["redis"]["po
 
 irma_service = IrmaService(
     irma_internal_server_url=config["irma"]["irma_internal_server_url"],
-    irma_disclose_prefix=config["irma"]["irma_disclose_prefix"]
+    irma_disclose_prefix=config["irma"]["irma_disclose_prefix"],
 )
 
 session_service_ = SessionService(

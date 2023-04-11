@@ -30,14 +30,14 @@
         // Front-end options
         language:  'en',
         translations: {
-            header:  'Uzipoc login',
+            header:  '{{ login_title }}',
             loading: 'Just one second please!'
         },
 
         // Back-end options
         session: {
             start: {
-                url: o => `${o.url}` + '/session/{{ exchange_token }}',
+                url: o => `${o.url}` + '/session/{{ exchange_token }}/irma',
             },
             result: false,
             mapping: {

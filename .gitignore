@@ -1,6 +1,7 @@
 __pycache__
 .DS_Store
 .fleet
+.idea
 app.egg-info
 .venv
 *.conf

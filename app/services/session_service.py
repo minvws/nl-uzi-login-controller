@@ -1,0 +1,168 @@
+import json
+import logging
+import random
+import string
+import time
+from typing import Union
+
+from fastapi import HTTPException
+from fastapi.responses import JSONResponse
+from redis import Redis
+from jwcrypto.jwt import JWT
+from jwcrypto.jwk import JWK
+from starlette.responses import RedirectResponse, Response
+from starlette.templating import Jinja2Templates
+
+from app.exceptions import (
+    IrmaSessionExpired,
+    IrmaSessionNotCompleted,
+    IrmaServerException,
+)
+from app.models import Session, SessionType, SessionStatus
+from app.services.irma_service import IrmaService
+
+REDIS_IRMA_SESSION_KEY = "irma_session"
+
+
+logger = logging.getLogger(__name__)
+
+
+def rand_pass(size):
+    generate_pass = "".join(
+        [random.choice(string.ascii_lowercase + string.digits) for _ in range(size)]
+    )
+    return generate_pass
+
+
+templates = Jinja2Templates(directory="jinja2")
+
+
+class SessionService:
+    def __init__(
+        self,
+        redis_client: Redis,
+        irma_service: IrmaService,
+        irma_disclose_prefix: str,
+        redis_namespace: str,
+        expires_in_s: int,
+        jwt_issuer: str,
+        jwt_issuer_crt_path: str,
+        jwt_audience: str,
+    ):
+        self._redis_client = redis_client
+        self._irma_service = irma_service
+        self._irma_disclose_prefix = irma_disclose_prefix
+        self._redis_namespace = redis_namespace
+        self._expires_in_s = expires_in_s
+        self._jwt_issuer = jwt_issuer
+        self._jwt_audience = jwt_audience
+        with open(jwt_issuer_crt_path, encoding="utf-8") as file:
+            self._jwt_issuer_crt_path = JWK.from_pem(file.read().encode("utf-8"))
+
+    def create(self, raw_jwt: str):
+        jwt = JWT(
+            jwt=raw_jwt,
+            key=self._jwt_issuer_crt_path,
+            check_claims={
+                "iss": self._jwt_issuer,
+                "aud": self._jwt_audience,
+                "exp": time.time(),
+                "nbf": time.time(),
+            },
+        )
+        claims = json.loads(jwt.claims)
+        session = Session(
+            exchange_token=rand_pass(64),
+            session_status=SessionStatus.INITIALIZED,
+            **claims,
+        )
+
+        if session.session_type == SessionType.IRMA:
+            session.irma_disclose_response = self._irma_service.create_disclose_session(
+                json.loads(jwt.claims)["disclosures"]
+            )
+
+        self._redis_client.set(
+            f"{self._redis_namespace}:{REDIS_IRMA_SESSION_KEY}:{session.exchange_token}",
+            session.json(),
+            ex=self._expires_in_s,
+        )
+        return JSONResponse(session.exchange_token)
+
+    def irma(self, exchange_token: str):
+        session = self._token_to_session(exchange_token)
+        if session.irma_disclose_response is None:
+            raise IrmaServerException()
+        irma_session = json.loads(session.irma_disclose_response)
+        return JSONResponse(irma_session["sessionPtr"])
+
+    def status(self, exchange_token):
+        session = self._token_to_session(exchange_token)
+        self._update_status(session)
+        return JSONResponse(session.session_status)
+
+    def _token_to_session(self, token: str) -> Session:
+        session_str: Union[str, None] = self._redis_client.get(
+            f"{self._redis_namespace}:{REDIS_IRMA_SESSION_KEY}:{token}",
+        )
+        if not session_str:
+            raise IrmaSessionExpired()
+        session = Session.parse_raw(session_str)
+        return session
+
+    def _update_status(self, session: Session):
+        if session.session_status == SessionStatus.DONE:
+            return
+
+        if session.session_type == SessionType.IRMA:
+            if session.irma_disclose_response is None:
+                raise IrmaServerException()
+            irma_session_result = self._irma_service.fetch_disclose_result(
+                json.loads(session.irma_disclose_response)["token"]
+            )
+            if irma_session_result["status"] == "DONE":
+                session.irma_session_result = irma_session_result
+                self._redis_client.set(
+                    f"{self._redis_namespace}:{REDIS_IRMA_SESSION_KEY}:{session.exchange_token}",
+                    session.json(),
+                    ex=self._expires_in_s,
+                )
+                session.session_status = SessionStatus.DONE
+
+    def result(self, exchange_token) -> Response:
+        session = self._token_to_session(exchange_token)
+        self._update_status(session)
+        if session.session_status != SessionStatus.DONE:
+            raise IrmaSessionNotCompleted()
+        if session.session_type == SessionType.IRMA:
+            if session.irma_session_result is None:
+                raise IrmaServerException()
+            disclosed_response = {}
+            for item in session.irma_session_result["disclosed"][0]:
+                disclosed_response[
+                    item["id"].replace(self._irma_disclose_prefix + ".", "")
+                ] = item["rawvalue"]
+            return JSONResponse(disclosed_response)
+        raise HTTPException(status_code=500, detail="Session type not supported")
+
+    def login(self, exchange_token, state, request, redirect_url):
+        session_str: Union[str, None] = self._redis_client.get(
+            f"{self._redis_namespace}:{REDIS_IRMA_SESSION_KEY}:{exchange_token}",
+        )
+        if not session_str:
+            return RedirectResponse(
+                url=f"{redirect_url}?state={state}&error=session%20not%20found",
+                status_code=403,
+            )
+        session = Session.parse_raw(session_str)
+
+        return templates.TemplateResponse(
+            "login.html",
+            {
+                "request": request,
+                "exchange_token": session.exchange_token,
+                "login_title": session.login_title,
+                "state": state,
+                "redirect_url": redirect_url,
+            },
+        )

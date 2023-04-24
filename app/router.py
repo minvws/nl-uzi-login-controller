@@ -1,35 +1,59 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
-from fastapi.templating import Jinja2Templates
 
-from app.dependencies import irma_service_, redirect_url_
-from app.services.irma_service import IrmaService
+from app.dependencies import session_service_, redirect_url_
+from app.exceptions import IrmaSessionExpired
+from app.services.session_service import SessionService
 
 router = APIRouter()
-templates = Jinja2Templates(directory="jinja2")
 
 
 @router.post("/session")
 async def session(
     request: Request,
-    irma_service: IrmaService = Depends(lambda: irma_service_),
+    irma_service: SessionService = Depends(lambda: session_service_),
 ):
+    """
+    Create a new IRMA session
+    """
     request_body = await request.body()
     if isinstance(request_body, bytes):
-        return irma_service.create_session(request_body.decode("utf-8"))
+        return irma_service.create(request_body.decode("utf-8"))
     raise HTTPException(status_code=403, detail="No valid content provided")
 
 
-@router.get("/session/{exchange_token}")
-def fetch_session(
-    exchange_token: str, irma_service: IrmaService = Depends(lambda: irma_service_)
+@router.get("/session/{exchange_token}/status")
+async def session_status(
+    exchange_token: str,
+    irma_service: SessionService = Depends(lambda: session_service_),
 ):
-    return irma_service.fetch(exchange_token)
+    """
+    Get the status of a session
+    """
+    try:
+        return irma_service.status(exchange_token)
+    except IrmaSessionExpired as exp:
+        raise HTTPException(status_code=404, detail="Session expired") from exp
 
 
-@router.get("/result/{exchange_token}")
+@router.get("/session/{exchange_token}/irma")
+def irma_session(
+    exchange_token: str,
+    irma_service: SessionService = Depends(lambda: session_service_),
+):
+    """
+    Get the IRMA response from a session
+    """
+    return irma_service.irma(exchange_token)
+
+
+@router.get("/session/{exchange_token}/result")
 def result(
-    exchange_token: str, irma_service: IrmaService = Depends(lambda: irma_service_)
+    exchange_token: str,
+    irma_service: SessionService = Depends(lambda: session_service_),
 ):
+    """
+    Fetch the session result
+    """
     return irma_service.result(exchange_token)
 
 
@@ -39,13 +63,9 @@ def page(
     state: str,
     request: Request,
     redirect_url: str = Depends(lambda: redirect_url_),
+    irma_service: SessionService = Depends(lambda: session_service_),
 ):
-    return templates.TemplateResponse(
-        "login.html",
-        {
-            "request": request,
-            "exchange_token": exchange_token,
-            "state": state,
-            "redirect_url": redirect_url,
-        },
-    )
+    """
+    Fetch the login page
+    """
+    return irma_service.login(exchange_token, state, request, redirect_url)

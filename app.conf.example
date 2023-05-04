@@ -1,11 +1,16 @@
 [app]
 redirect_url = https://localhost:8006/continue
 
+[session]
+jwt_issuer=nl-rdo-max-private
+jwt_issuer_crt_path=secrets/nl-rdo-max-private.crt
+jwt_audience=nl-uzi-login-controller
+
 [redis]
 # Connecting to the redis server through parameters:
 host = localhost
 port = 6379
-namespace = nl-uzi-irma-api
+namespace = nl-uzi-login-controller
 expire = 60
 
 [irma]

@@ -137,12 +137,10 @@ class SessionService:
         if session.session_type == SessionType.IRMA:
             if session.irma_session_result is None:
                 raise IrmaServerException()
-            disclosed_response = {}
             for item in session.irma_session_result["disclosed"][0]:
-                disclosed_response[
-                    item["id"].replace(self._irma_disclose_prefix + ".", "")
-                ] = item["rawvalue"]
-            return JSONResponse(disclosed_response)
+                if item["id"].replace(self._irma_disclose_prefix + ".", "") == "uziId":
+                    return JSONResponse({"uzi_id": item["rawvalue"]})
+            return JSONResponse({})
         raise HTTPException(status_code=500, detail="Session type not supported")
 
     def login(self, exchange_token, state, request, redirect_url):

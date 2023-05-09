@@ -4,3 +4,12 @@ services:
     restart: 'no'
     ports:
       - '6380:6379'
+  apache:
+    image: httpd
+    restart: 'no'
+    ports:
+      - '8443:443'
+    volumes:
+      - './secrets:/usr/local/secrets'
+      - './httpd.conf:/usr/local/apache2/conf/httpd.conf'
+      - './httpd-ssl.conf:/usr/local/apache2/conf/extra/httpd-ssl.conf'

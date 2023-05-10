@@ -43,7 +43,10 @@ def irma_session(
     """
     Get the IRMA response from a session
     """
-    return irma_service.irma(exchange_token)
+    try:
+        return irma_service.irma(exchange_token)
+    except IrmaSessionExpired as exp:
+        raise HTTPException(status_code=404, detail="Session expired") from exp
 
 
 @router.get("/session/{exchange_token}/result")
@@ -54,7 +57,10 @@ def result(
     """
     Fetch the session result
     """
-    return irma_service.result(exchange_token)
+    try:
+        return irma_service.result(exchange_token)
+    except IrmaSessionExpired as exp:
+        raise HTTPException(status_code=404, detail="Session expired") from exp
 
 
 @router.get("/login/{exchange_token}")

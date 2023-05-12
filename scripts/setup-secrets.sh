@@ -36,8 +36,15 @@ if [[ ! -f $SECRETS_DIR/cacert.crt ]]; then
 fi
 
 ###
-# SSL certs
+# SSL cert
 ###
 if [[ ! -f $SECRETS_DIR/ssl/apache-selfsigned.crt ]]; then
   create_key_pair $SECRETS_DIR/ssl "apache-selfsigned" "localhost"
+fi
+
+###
+# nl-rdo-max-private mock cert
+###
+if [[ ! -f $SECRETS_DIR/nl-rdo-max-private.crt ]]; then
+  create_key_pair $SECRETS_DIR "nl-rdo-max-private" "nl-rdo-max-private"
 fi

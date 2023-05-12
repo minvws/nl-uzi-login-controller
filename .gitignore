@@ -7,5 +7,3 @@ app.egg-info
 *.conf
 *.json
 *.bak
-*.key
-*.pub

@@ -88,7 +88,7 @@ async def uzi_login(
     session_service: SessionService = Depends(lambda: session_service_),
 ):
     """
-    Fetch the login page
+    Read cert from uzi card and login
     """
     cert = request.headers['x-proxy-ssl_client_cert']
     formatted_cert = enforce_cert_newlines(cert)

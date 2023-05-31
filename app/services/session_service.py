@@ -49,6 +49,7 @@ class SessionService:
         jwt_issuer: str,
         jwt_issuer_crt_path: str,
         jwt_audience: str,
+        mock_enabled: bool,
     ):
         self._redis_client = redis_client
         self._irma_service = irma_service
@@ -59,6 +60,7 @@ class SessionService:
         self._jwt_audience = jwt_audience
         with open(jwt_issuer_crt_path, encoding="utf-8") as file:
             self._jwt_issuer_crt_path = JWK.from_pem(file.read().encode("utf-8"))
+        self._mock_enabled = mock_enabled
 
     def create(self, raw_jwt: str):
         jwt = JWT(
@@ -135,6 +137,8 @@ class SessionService:
                 session.session_status = SessionStatus.DONE
 
     def result(self, exchange_token) -> Response:
+        if self._mock_enabled and exchange_token == "mocked_exchange_token":
+            return JSONResponse({"uzi_id": "123456789"})
         session = self._token_to_session(exchange_token)
         self._poll_status_irma(session)
         if session.session_status != SessionStatus.DONE:

@@ -26,4 +26,5 @@ session_service_ = SessionService(
     jwt_issuer=config["session"]["jwt_issuer"],
     jwt_issuer_crt_path=config["session"]["jwt_issuer_crt_path"],
     jwt_audience=config["session"]["jwt_audience"],
+    mock_enabled=config.getboolean("app", "mock_enabled"),
 )

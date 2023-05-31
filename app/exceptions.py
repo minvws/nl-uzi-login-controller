@@ -22,5 +22,5 @@ class IrmaSessionNotCompleted(Exception):
         super().__init__("Irma session not completed")
 
 
-async def general_exception_handler(_: Request, exception: Exception):
-    return JSONResponse(str(exception), status_code=500)
+async def general_exception_handler(_request: Request, _exception: Exception):
+    return JSONResponse("Internal Server Error", status_code=500)

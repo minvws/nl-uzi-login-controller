@@ -17,6 +17,7 @@ from app.exceptions import (
     IrmaSessionExpired,
     IrmaSessionNotCompleted,
     IrmaServerException,
+    GeneralServerException
 )
 from app.models import Session, SessionType, SessionStatus
 from app.services.irma_service import IrmaService
@@ -98,7 +99,7 @@ class SessionService:
 
     def status(self, exchange_token):
         session = self._token_to_session(exchange_token)
-        self._update_status(session)
+        self._poll_status_irma(session)
         return JSONResponse(session.session_status)
 
     def _token_to_session(self, token: str) -> Session:
@@ -110,8 +111,7 @@ class SessionService:
         session = Session.parse_raw(session_str)
         return session
 
-    def _update_status(self, session: Session):
-        # @TODO: update name to something with polling irma
+    def _poll_status_irma(self, session: Session):
         if session.session_status == SessionStatus.DONE:
             return
 
@@ -136,12 +136,11 @@ class SessionService:
 
     def result(self, exchange_token) -> Response:
         session = self._token_to_session(exchange_token)
-        self._update_status(session)
+        self._poll_status_irma(session)
         if session.session_status != SessionStatus.DONE:
             raise IrmaSessionNotCompleted()
         if session.uzi_id is None:
-            # @TODO: more generic exception
-            raise IrmaServerException()
+            raise GeneralServerException()
         return JSONResponse({"uzi_id": session.uzi_id})
 
     def login_irma(self, exchange_token, state, request, redirect_url):
@@ -178,8 +177,7 @@ class SessionService:
 
         session: Session = Session.parse_raw(session_str)
         if not session.session_type == SessionType.UZI_CARD:
-            # @TODO: not found exception
-            raise Exception('404')
+            return HTTPException(status_code=404)
         session.session_status = SessionStatus.DONE
         session.uzi_id = uzi_id
 

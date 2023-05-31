@@ -11,4 +11,5 @@ app.egg-info
 *.key
 *.pub
 *.srl
+*.pem
 

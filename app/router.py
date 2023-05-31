@@ -80,7 +80,7 @@ def enforce_cert_newlines(cert_data):
 
 
 @router.get("/login/uzi/{exchange_token}")
-async def bla(
+async def uzi_login(
     exchange_token: str,
     state: str,
     request: Request,

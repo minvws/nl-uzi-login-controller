@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 class SessionType(str, Enum):
     IRMA = "irma"
-    UZI_PAS = "uzi_pas"
+    UZI_CARD = "uzi_card"
 
 
 class SessionStatus(str, Enum):
@@ -22,3 +22,4 @@ class Session(BaseModel):
     session_status: SessionStatus
     irma_disclose_response: Union[str, None]
     irma_session_result: Union[Dict[str, Any], None]
+    uzi_id: Union[str, None]

@@ -7,3 +7,7 @@ app.egg-info
 *.conf
 *.json
 *.bak
+*.crt
+*.srl
+*.pem
+*.key

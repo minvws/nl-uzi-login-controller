@@ -5,10 +5,6 @@ from app.dependencies import session_service_, redirect_url_
 from app.exceptions import IrmaSessionExpired
 from app.services.session_service import SessionService
 from uzireader.uzipassuser import UziPassUser
-# from uzireader.uzipassvalidator import UziPassValidator
-from fastapi.responses import JSONResponse
-# from asn1crypto import pem, x509
-from cryptography import x509
 
 router = APIRouter()
 
@@ -98,5 +94,3 @@ async def bla(
     formatted_cert = enforce_cert_newlines(cert)
     user = UziPassUser(verify='SUCCESS', cert=formatted_cert)
     return session_service.login_uzi(exchange_token, state, request, redirect_url, user['UziNumber'])
-
-

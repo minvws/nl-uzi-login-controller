@@ -10,7 +10,7 @@ requirements = [
     "jwcrypto",
     "setuptools",
     "asn1crypto",
-    "pUzi"
+    "pUziPython @ git+ssh://git@github.com/minvws/pUzi-python@hotfix-setuptools"
 ]
 
 setup(

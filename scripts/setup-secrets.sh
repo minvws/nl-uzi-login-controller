@@ -3,7 +3,6 @@
 set -e
 
 SECRETS_DIR=secrets
-SAML_DIR=saml
 
 create_key_pair () {
   echo "generating keypair and certificate $1/$2 with CN:$3"

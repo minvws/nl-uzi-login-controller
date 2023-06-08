@@ -17,7 +17,7 @@ from app.exceptions import (
     IrmaSessionExpired,
     IrmaSessionNotCompleted,
     IrmaServerException,
-    GeneralServerException
+    GeneralServerException,
 )
 from app.models import Session, SessionType, SessionStatus
 from app.services.irma_service import IrmaService
@@ -126,7 +126,10 @@ class SessionService:
             if irma_session_result["status"] == "DONE":
                 session.irma_session_result = irma_session_result
                 for item in session.irma_session_result["disclosed"][0]:
-                    if item["id"].replace(self._irma_disclose_prefix + ".", "") == "uziId":
+                    if (
+                        item["id"].replace(self._irma_disclose_prefix + ".", "")
+                        == "uziId"
+                    ):
                         session.uzi_id = item["rawvalue"]
 
                 self._redis_client.set(

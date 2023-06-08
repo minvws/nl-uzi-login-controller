@@ -80,9 +80,16 @@ def page(
 
 
 def enforce_cert_newlines(cert_data):
-    cert_data = cert_data.split("-----BEGIN CERTIFICATE-----")[-1].split("-----END CERTIFICATE-----")[0].strip()
-    return "-----BEGIN CERTIFICATE-----\n" + "\n".join(
-        textwrap.wrap(cert_data.replace(" ", ""), 64)) + "\n-----END CERTIFICATE-----"
+    cert_data = (
+        cert_data.split("-----BEGIN CERTIFICATE-----")[-1]
+        .split("-----END CERTIFICATE-----")[0]
+        .strip()
+    )
+    return (
+        "-----BEGIN CERTIFICATE-----\n"
+        + "\n".join(textwrap.wrap(cert_data.replace(" ", ""), 64))
+        + "\n-----END CERTIFICATE-----"
+    )
 
 
 @router.get("/login/uzi/{exchange_token}")
@@ -96,7 +103,9 @@ async def uzi_login(
     """
     Read cert from uzi card and login
     """
-    cert = request.headers['x-proxy-ssl_client_cert']
+    cert = request.headers["x-proxy-ssl_client_cert"]
     formatted_cert = enforce_cert_newlines(cert)
-    user = UziPassUser(verify='SUCCESS', cert=formatted_cert)
-    return session_service.login_uzi(exchange_token, state, redirect_url, user['UziNumber'])
+    user = UziPassUser(verify="SUCCESS", cert=formatted_cert)
+    return session_service.login_uzi(
+        exchange_token, state, redirect_url, user["UziNumber"]
+    )

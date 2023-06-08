@@ -1,10 +1,10 @@
 import textwrap
 from fastapi import APIRouter, Depends, Request, HTTPException
 
+from uzireader.uzipassuser import UziPassUser
 from app.dependencies import session_service_, redirect_url_
 from app.exceptions import IrmaSessionExpired
 from app.services.session_service import SessionService
-from uzireader.uzipassuser import UziPassUser
 
 router = APIRouter()
 
@@ -99,4 +99,4 @@ async def uzi_login(
     cert = request.headers['x-proxy-ssl_client_cert']
     formatted_cert = enforce_cert_newlines(cert)
     user = UziPassUser(verify='SUCCESS', cert=formatted_cert)
-    return session_service.login_uzi(exchange_token, state, request, redirect_url, user['UziNumber'])
+    return session_service.login_uzi(exchange_token, state, redirect_url, user['UziNumber'])

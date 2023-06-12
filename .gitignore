@@ -10,3 +10,6 @@ app.egg-info
 *.crt
 *.key
 *.pub
+*.srl
+*.pem
+

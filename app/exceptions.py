@@ -2,6 +2,11 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 
 
+class GeneralServerException(Exception):
+    def __init__(self):
+        super().__init__("Unable to fetch response from Server")
+
+
 class IrmaServerException(Exception):
     def __init__(self):
         super().__init__("Unable to fetch response from IrmaServer")

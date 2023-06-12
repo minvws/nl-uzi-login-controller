@@ -7,7 +7,10 @@ requirements = [
     "requests",
     "redis",
     "jinja2",
-    "jwcrypto"
+    "jwcrypto",
+    "setuptools",
+    "asn1crypto",
+    "pUzi @ git+ssh://git@github.com/minvws/pUzi-python"
 ]
 
 setup(

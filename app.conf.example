@@ -1,5 +1,6 @@
 [app]
 redirect_url = https://localhost:8006/continue
+mock_enabled = False
 
 [session]
 jwt_issuer=nl-rdo-max-private

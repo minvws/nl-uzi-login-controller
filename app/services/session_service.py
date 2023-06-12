@@ -17,11 +17,13 @@ from app.exceptions import (
     IrmaSessionExpired,
     IrmaSessionNotCompleted,
     IrmaServerException,
+    GeneralServerException,
 )
 from app.models import Session, SessionType, SessionStatus
 from app.services.irma_service import IrmaService
 
-REDIS_IRMA_SESSION_KEY = "irma_session"
+REDIS_SESSION_KEY = "session"
+SESSION_NOT_FOUND_ERROR = "session%20not%20found"
 
 
 logger = logging.getLogger(__name__)
@@ -85,7 +87,7 @@ class SessionService:
             )
 
         self._redis_client.set(
-            f"{self._redis_namespace}:{REDIS_IRMA_SESSION_KEY}:{session.exchange_token}",
+            f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{session.exchange_token}",
             session.json(),
             ex=self._expires_in_s,
         )
@@ -100,19 +102,19 @@ class SessionService:
 
     def status(self, exchange_token):
         session = self._token_to_session(exchange_token)
-        self._update_status(session)
+        self._poll_status_irma(session)
         return JSONResponse(session.session_status)
 
     def _token_to_session(self, token: str) -> Session:
         session_str: Union[str, None] = self._redis_client.get(
-            f"{self._redis_namespace}:{REDIS_IRMA_SESSION_KEY}:{token}",
+            f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{token}",
         )
         if not session_str:
             raise IrmaSessionExpired()
         session = Session.parse_raw(session_str)
         return session
 
-    def _update_status(self, session: Session):
+    def _poll_status_irma(self, session: Session):
         if session.session_status == SessionStatus.DONE:
             return
 
@@ -124,8 +126,15 @@ class SessionService:
             )
             if irma_session_result["status"] == "DONE":
                 session.irma_session_result = irma_session_result
+                for item in session.irma_session_result["disclosed"][0]:  # type: ignore
+                    if (
+                        item["id"].replace(self._irma_disclose_prefix + ".", "")
+                        == "uziId"
+                    ):
+                        session.uzi_id = item["rawvalue"]
+
                 self._redis_client.set(
-                    f"{self._redis_namespace}:{REDIS_IRMA_SESSION_KEY}:{session.exchange_token}",
+                    f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{session.exchange_token}",
                     session.json(),
                     ex=self._expires_in_s,
                 )
@@ -135,25 +144,20 @@ class SessionService:
         if self._mock_enabled and exchange_token == "mocked_exchange_token":
             return JSONResponse({"uzi_id": "123456789"})
         session = self._token_to_session(exchange_token)
-        self._update_status(session)
+        self._poll_status_irma(session)
         if session.session_status != SessionStatus.DONE:
             raise IrmaSessionNotCompleted()
-        if session.session_type == SessionType.IRMA:
-            if session.irma_session_result is None:
-                raise IrmaServerException()
-            for item in session.irma_session_result["disclosed"][0]:
-                if item["id"].replace(self._irma_disclose_prefix + ".", "") == "uziId":
-                    return JSONResponse({"uzi_id": item["rawvalue"]})
-            return JSONResponse({})
-        raise HTTPException(status_code=500, detail="Session type not supported")
+        if session.uzi_id is None:
+            raise GeneralServerException()
+        return JSONResponse({"uzi_id": session.uzi_id})
 
-    def login(self, exchange_token, state, request, redirect_url):
+    def login_irma(self, exchange_token, state, request, redirect_url) -> Response:
         session_str: Union[str, None] = self._redis_client.get(
-            f"{self._redis_namespace}:{REDIS_IRMA_SESSION_KEY}:{exchange_token}",
+            f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
         )
         if not session_str:
             return RedirectResponse(
-                url=f"{redirect_url}?state={state}&error=session%20not%20found",
+                url=f"{redirect_url}?state={state}&error={SESSION_NOT_FOUND_ERROR}",
                 status_code=403,
             )
         session = Session.parse_raw(session_str)
@@ -167,4 +171,33 @@ class SessionService:
                 "state": state,
                 "redirect_url": redirect_url,
             },
+        )
+
+    def login_uzi(
+        self, exchange_token, state, redirect_url, uzi_id
+    ) -> Union[RedirectResponse, HTTPException]:
+        session_str: Union[str, None] = self._redis_client.get(
+            f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
+        )
+        if not session_str:
+            return RedirectResponse(
+                url=f"{redirect_url}?state={state}&error={SESSION_NOT_FOUND_ERROR}",
+                status_code=403,
+            )
+
+        session: Session = Session.parse_raw(session_str)
+        if not session.session_type == SessionType.UZI_CARD:
+            return HTTPException(status_code=404)
+        session.session_status = SessionStatus.DONE
+        session.uzi_id = uzi_id
+
+        self._redis_client.set(
+            f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{session.exchange_token}",
+            session.json(),
+            ex=self._expires_in_s,
+        )
+
+        return RedirectResponse(
+            url=f"{redirect_url}?state={state}&exchange_token={session.exchange_token}",
+            status_code=303,
         )

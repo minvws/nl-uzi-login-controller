@@ -23,6 +23,7 @@ from app.models import Session, SessionType, SessionStatus
 from app.services.irma_service import IrmaService
 
 REDIS_SESSION_KEY = "session"
+SESSION_NOT_FOUND_ERROR = "session%20not%20found"
 
 
 logger = logging.getLogger(__name__)
@@ -156,7 +157,7 @@ class SessionService:
         )
         if not session_str:
             return RedirectResponse(
-                url=f"{redirect_url}?state={state}&error=session%20not%20found",
+                url=f"{redirect_url}?state={state}&error={SESSION_NOT_FOUND_ERROR}",
                 status_code=403,
             )
         session = Session.parse_raw(session_str)
@@ -180,7 +181,7 @@ class SessionService:
         )
         if not session_str:
             return RedirectResponse(
-                url=f"{redirect_url}?state={state}&error=session%20not%20found",
+                url=f"{redirect_url}?state={state}&error={SESSION_NOT_FOUND_ERROR}",
                 status_code=403,
             )
 

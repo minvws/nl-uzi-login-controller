@@ -104,6 +104,9 @@ async def uzi_login(
     Read cert from uzi card and login
     """
     cert = request.headers["x-proxy-ssl_client_cert"]
+    if not cert:
+        raise HTTPException(status_code=404)
+
     formatted_cert = enforce_cert_newlines(cert)
     user = UziPassUser(verify="SUCCESS", cert=formatted_cert)
     return session_service.login_uzi(

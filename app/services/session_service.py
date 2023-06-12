@@ -125,7 +125,7 @@ class SessionService:
             )
             if irma_session_result["status"] == "DONE":
                 session.irma_session_result = irma_session_result
-                for item in session.irma_session_result["disclosed"][0]:
+                for item in session.irma_session_result["disclosed"][0]:  # type: ignore
                     if (
                         item["id"].replace(self._irma_disclose_prefix + ".", "")
                         == "uziId"

@@ -1,7 +1,7 @@
 import textwrap
 from fastapi import APIRouter, Depends, Request, HTTPException
 
-from uzireader.uzipassuser import UziPassUser
+from uzireader.uzipassuser import UziPassUser  # type: ignore
 from app.dependencies import session_service_, redirect_url_
 from app.exceptions import IrmaSessionExpired
 from app.services.session_service import SessionService

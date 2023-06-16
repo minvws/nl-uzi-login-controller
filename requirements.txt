@@ -6,6 +6,8 @@
 #
 anyio==3.6.2
     # via starlette
+asn1crypto==1.5.1
+    # via app (setup.py)
 astroid==2.14.2
     # via pylint
 async-timeout==4.0.2
@@ -91,6 +93,8 @@ platformdirs==3.0.0
     #   pylint
 pluggy==1.0.0
     # via pytest
+puzi @ git+ssh://git@github.com/minvws/pUzi-python
+    # via app (setup.py)
 pycparser==2.21
     # via cffi
 pydantic==1.10.5
@@ -148,3 +152,6 @@ wrapt==1.15.0
     # via
     #   astroid
     #   deprecated
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools

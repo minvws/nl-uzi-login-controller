@@ -109,7 +109,7 @@ pyyaml==6.0
     # via bandit
 redis==4.5.4
     # via app (setup.py)
-requests==2.28.2
+requests==2.31.0
     # via app (setup.py)
 smmap==5.0.0
     # via gitdb

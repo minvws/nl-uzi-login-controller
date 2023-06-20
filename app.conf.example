@@ -15,7 +15,7 @@ namespace = nl-uzi-login-controller
 expire = 60
 
 [irma]
-irma_internal_server_url = http://localhost:8088
+irma_internal_server_url = https://irma.uzipoc.nl
 irma_disclose_prefix = irma-demo.uzipoc-cibg.uzi-2
 
 [uvicorn]

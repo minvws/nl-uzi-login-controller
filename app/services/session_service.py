@@ -19,7 +19,7 @@ from app.exceptions import (
     IrmaServerException,
     GeneralServerException,
 )
-from app.models import Session, SessionType, SessionStatus
+from app.models import Session, SessionType, SessionStatus, SessionLoa
 from app.services.irma_service import IrmaService
 
 REDIS_SESSION_KEY = "session"
@@ -83,7 +83,11 @@ class SessionService:
 
         if session.session_type == SessionType.IRMA:
             session.irma_disclose_response = self._irma_service.create_disclose_session(
-                json.loads(jwt.claims)["disclosures"]
+                [
+                    {"disclose_type": "uziId"},
+                    {"disclose_type": "roles"},
+                    {"disclose_type": "loaAuthn"},
+                ],
             )
 
         self._redis_client.set(
@@ -133,6 +137,12 @@ class SessionService:
                     ):
                         session.uzi_id = item["rawvalue"]
 
+                    if (
+                        item["id"].replace(self._irma_disclose_prefix + ".", "")
+                        == "loaAuthn"
+                    ):
+                        session.loa_authn = item["rawvalue"]
+
                 self._redis_client.set(
                     f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{session.exchange_token}",
                     session.json(),
@@ -142,14 +152,16 @@ class SessionService:
 
     def result(self, exchange_token) -> Response:
         if self._mock_enabled and exchange_token == "mocked_exchange_token":
-            return JSONResponse({"uzi_id": "123456789"})
+            return JSONResponse(
+                {"uzi_id": "123456789", "loa_authn": SessionLoa.SUBSTANTIAL}
+            )
         session = self._token_to_session(exchange_token)
         self._poll_status_irma(session)
         if session.session_status != SessionStatus.DONE:
             raise IrmaSessionNotCompleted()
         if session.uzi_id is None:
             raise GeneralServerException()
-        return JSONResponse({"uzi_id": session.uzi_id})
+        return JSONResponse({"uzi_id": session.uzi_id, "loa_authn": session.loa_authn})
 
     def login_irma(self, exchange_token, state, request, redirect_url) -> Response:
         session_str: Union[str, None] = self._redis_client.get(
@@ -190,6 +202,7 @@ class SessionService:
             return HTTPException(status_code=404)
         session.session_status = SessionStatus.DONE
         session.uzi_id = uzi_id
+        session.loa_authn = SessionLoa.HIGH
 
         self._redis_client.set(
             f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{session.exchange_token}",

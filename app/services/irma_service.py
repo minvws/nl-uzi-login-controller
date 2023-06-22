@@ -17,9 +17,11 @@ class IrmaService:
         self,
         irma_internal_server_url: str,
         irma_disclose_prefix: str,
+        irma_revocation: bool,
     ):
         self._irma_internal_server_url = irma_internal_server_url
         self._irma_disclose_prefix = irma_disclose_prefix
+        self._irma_revocation = irma_revocation
 
     def create_disclose_session(
         self, requested_disclosures: List[Dict[str, str]]
@@ -34,6 +36,10 @@ class IrmaService:
             "@context": "https://irma.app/ld/request/disclosure/v2",
             "disclose": [[discloses]],
         }
+
+        if self._irma_revocation:
+            irma_session_request["revocation"] = [self._irma_disclose_prefix]
+
         irma_response = requests.post(
             f"{self._irma_internal_server_url}/session",
             headers={"Content-Type": "application/json"},
@@ -54,6 +60,7 @@ class IrmaService:
             f"{self._irma_internal_server_url}" + f"/session/{token}/result",
             timeout=30,
         )
+
         if irma_response.status_code >= 400:
             logger.error(
                 "Error while fetching IrmaResponse, Irma server returned: %s, %s",

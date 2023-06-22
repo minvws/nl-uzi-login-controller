@@ -17,6 +17,7 @@ expire = 60
 [irma]
 irma_internal_server_url = https://irma.uzipoc.nl
 irma_disclose_prefix = irma-demo.uzipoc-cibg.uzi-2
+irma_revocation = true
 
 [uvicorn]
 # The host to be running on

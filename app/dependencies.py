@@ -11,7 +11,6 @@ config.read("app.conf")
 
 redirect_url_ = config.get("app", "redirect_url")
 
-_redis_client = Redis(host=config["redis"]["host"], port=int(config["redis"]["port"]))
 _redis_client = create_redis_client(config["redis"])
 
 irma_service = IrmaService(

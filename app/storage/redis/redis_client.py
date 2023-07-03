@@ -29,4 +29,3 @@ def create_redis_client(redis_settings) -> Redis:
         )
 
     return Redis(host=redis_settings["host"], port=redis_settings["port"], db=0)
-

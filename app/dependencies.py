@@ -1,9 +1,10 @@
 from configparser import ConfigParser
 
-from redis import Redis
 
 from app.services.irma_service import IrmaService
 from app.services.session_service import SessionService
+from app.storage.redis.redis_client import create_redis_client
+
 
 config = ConfigParser()
 config.read("app.conf")
@@ -11,6 +12,7 @@ config.read("app.conf")
 redirect_url_ = config.get("app", "redirect_url")
 
 _redis_client = Redis(host=config["redis"]["host"], port=int(config["redis"]["port"]))
+_redis_client = create_redis_client(config["redis"])
 
 irma_service = IrmaService(
     irma_internal_server_url=config["irma"]["irma_internal_server_url"],

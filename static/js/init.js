@@ -41,10 +41,10 @@
 
         irmaPopup.start()
             .then(() => {
-                window.location.assign(data.redirect_url + '?state= ' + data.state);
+                window.location.assign(data.redirect_url + '?state=' + data.state);
             })
             .catch((err) => {
-                window.location.assign(data.redirect_url + '?state= ' + data.state + '&error=' + irmaPopup.stateMachine._state);
+                window.location.assign(data.redirect_url + '?state=' + data.state + '&error=' + irmaPopup.stateMachine._state);
             });
     });
 })();

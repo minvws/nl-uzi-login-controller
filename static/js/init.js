@@ -1,6 +1,4 @@
 function init_page(){
-
-    console.log("hiets?")
     let data = document.getElementById("info").dataset
     let handleState = function(state){
         if(state === "Error"){
@@ -9,7 +7,7 @@ function init_page(){
     }
     let options = {
         // Developer options
-        debugging: true,
+        debugging: false,
 
         // Front-end options
         language:  'en',

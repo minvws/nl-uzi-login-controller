@@ -22,7 +22,7 @@ def create_redis_client(redis_settings) -> Redis:
             host=redis_settings["host"],
             port=redis_settings["port"],
             db=0,
-            ssl=True,
+            ssl=redis_settings["ssl"],
             ssl_keyfile=redis_settings["key"],
             ssl_certfile=redis_settings["cert"],
             ssl_ca_certs=redis_settings["cafile"],

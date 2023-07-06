@@ -5,9 +5,10 @@
     <title>{{ login_title }} - login</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="/static/irmajs-v0.4.2/irma.js"></script>
+    <script src="/static/js/init.js"></script>
 </head>
-<main id="main-content" tabindex="-1">
 
+<main id="main-content" tabindex="-1">
     <section class="bg-color-offset auth">
         <div>
             <div class="tile options-overview">
@@ -15,53 +16,11 @@
             </div>
         </div>
     </section>
+    <div id="info"
+     data-title="{{ login_title }}"
+     data-redirect_url="{{ redirect_url }}"
+     data-exchange_token="{{ exchange_token }}"
+     data-state="{{ state }}"
+     hidden></div>
 </main>
-<script>
-    let handleState = function(state){
-        console.log(state);
-        if(state === "Error"){
-            window.location.assign('{{ redirect_url }}?state={{ state }}&error=' + irmaPopup.stateMachine._state);
-        }
-    }
-    let options = {
-        // Developer options
-        debugging: true,
-
-        // Front-end options
-        language:  'en',
-        translations: {
-            header:  '{{ login_title }} - login',
-            loading: 'Just one second please!'
-        },
-
-        // Back-end options
-        session: {
-            start: {
-                url: o => `${o.url}` + '/session/{{ exchange_token }}/irma',
-            },
-            result: false,
-            mapping: {
-                sessionPtr: r => r,
-            },
-        },
-    };
-
-    const irmaPopup = irma.newPopup({
-        ...options,
-        element: '#irma-web-form'
-    });
-
-    handleState(irmaPopup.stateMachine._state)
-    setInterval(function () {
-        handleState(irmaPopup.stateMachine._state)
-    }, 1000);
-
-    irmaPopup.start()
-        .then(() => {
-            window.location.assign('{{ redirect_url }}?state={{ state }}');
-        })
-        .catch((err) => {
-            window.location.assign('{{ redirect_url }}?state={{ state }}&error=' + irmaPopup.stateMachine._state);
-        });
-</script>
 </html>

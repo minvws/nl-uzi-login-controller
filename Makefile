@@ -15,6 +15,7 @@ clean_venv: ## Remove virtual environment
 	@rm -rf .venv
 
 run:
+	docker-compose up -d
 	. .venv/bin/activate && ${env} python -m app.main
 
 pip-sync: ## synchronizes the .venv with the state of requirements.txt

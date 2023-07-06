@@ -8,21 +8,19 @@
     <script src="/static/js/init.js"></script>
 </head>
 
-<body onload="init_page()">
-    <main id="main-content" tabindex="-1">
-        <section class="bg-color-offset auth">
-            <div>
-                <div class="tile options-overview">
-                    <div id="irma-web-form"></div>
-                </div>
+<main id="main-content" tabindex="-1">
+    <section class="bg-color-offset auth">
+        <div>
+            <div class="tile options-overview">
+                <div id="irma-web-form"></div>
             </div>
-        </section>
-    </main>
-<div id="info"
+        </div>
+    </section>
+    <div id="info"
      data-title="{{ login_title }}"
      data-redirect_url="{{ redirect_url }}"
      data-exchange_token="{{ exchange_token }}"
      data-state="{{ state }}"
      hidden></div>
-</body>
+</main>
 </html>

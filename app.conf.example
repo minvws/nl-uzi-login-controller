@@ -22,6 +22,12 @@ cafile =
 irma_internal_server_url = https://irma.uzipoc.nl
 irma_disclose_prefix = irma-demo.uzipoc-cibg.uzi-2
 irma_revocation = true
+# If session_server_events_enabled = True: use Server Sent Events for checking the status of the Yivi session during login
+session_server_events_enabled = True
+# After ... ms the front-end should stop trying to check session status through Server Sent Events in case of failure
+session_server_events_timeout = 2000
+# The front-end should poll for the yivi session status every ... ms (fallback for SSE, or primary when SSE is disabled)
+session_polling_interval = 1000
 
 [uvicorn]
 # The host to be running on

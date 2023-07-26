@@ -29,4 +29,13 @@ session_service_ = SessionService(
     jwt_issuer_crt_path=config["session"]["jwt_issuer_crt_path"],
     jwt_audience=config["session"]["jwt_audience"],
     mock_enabled=config.getboolean("app", "mock_enabled"),
+    session_server_events_enabled=config.getboolean(
+        "irma", "session_server_events_enabled", fallback=False
+    ),
+    session_server_events_timeout=config.getint(
+        "irma", "session_server_events_timeout", fallback=2000
+    ),
+    session_polling_interval=config.getint(
+        "irma", "session_polling_interval", fallback=1000
+    ),
 )

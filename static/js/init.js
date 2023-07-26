@@ -6,16 +6,36 @@
                 window.location.assign(data.redirect_url + '?state='+ data.state +'&error=' + irmaPopup.stateMachine._state);
             }
         }
+
+        let serverSentEvents = undefined
+        if (data.session_server_events_enabled.toLowerCase() === 'true') {
+            serverSentEvents = {
+              endpoint: 'statusevents',
+              timeout:  data.session_server_events_timeout
+            }
+        }
+        else {
+            serverSentEvents = false
+        }
+        let state = {
+            serverSentEvents: serverSentEvents,
+            polling: {
+              endpoint:   'status',
+              interval:   data.session_polling_interval,
+              startState: 'INITIALIZED'
+            }
+        }
         let options = {
             // Developer options
             debugging: false,
-
+    
             // Front-end options
             language:  'en',
             translations: {
                 header:  data.title + ' - login',
                 loading: 'Just one second please!'
             },
+            state: state,
 
             // Back-end options
             session: {

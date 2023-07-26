@@ -7,7 +7,7 @@
             }
         }
 
-		let serverSentEvents = undefined
+        let serverSentEvents = undefined
         if (data.session_server_events_enabled.toLowerCase() === 'true') {
             serverSentEvents = {
               endpoint: 'statusevents',
@@ -25,12 +25,10 @@
               startState: 'INITIALIZED'
             }
         }
-        console.log(state);
-        console.log(data)
         let options = {
             // Developer options
             debugging: false,
-
+    
             // Front-end options
             language:  'en',
             translations: {

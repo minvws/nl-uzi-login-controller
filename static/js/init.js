@@ -7,16 +7,18 @@
             }
         }
 
-        if data.server_events_enabled:
-            let = serverSentEvents: {
+        if (data.server_events_enabled) {
+            let serverSentEvents = {
               endpoint: 'statusevents',
               timeout:  data.server_events_timeout
             }
-        else:
-            let serverSentEvents = False
+        }
+        else {
+            let serverSentEvents = false
+        }
 
         let state = {
-            serverSentEvents: serverSentEvents
+            serverSentEvents: serverSentEvents,
             polling: {
               endpoint:   'status',
               interval:   data.session_polling_interval,

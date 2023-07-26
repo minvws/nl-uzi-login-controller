@@ -21,7 +21,6 @@ from app.exceptions import (
 )
 from app.models import Session, SessionType, SessionStatus, SessionLoa
 from app.services.irma_service import IrmaService
-from app.dependencies import config
 
 REDIS_SESSION_KEY = "session"
 SESSION_NOT_FOUND_ERROR = "session%20not%20found"

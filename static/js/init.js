@@ -7,16 +7,16 @@
             }
         }
 
-        if (data.server_events_enabled) {
-            let serverSentEvents = {
+		let serverSentEvents = undefined
+        if (data.session_server_events_enabled.toLowerCase() === 'true') {
+            serverSentEvents = {
               endpoint: 'statusevents',
-              timeout:  data.server_events_timeout
+              timeout:  data.session_server_events_timeout
             }
         }
         else {
-            let serverSentEvents = false
+            serverSentEvents = false
         }
-
         let state = {
             serverSentEvents: serverSentEvents,
             polling: {
@@ -25,6 +25,8 @@
               startState: 'INITIALIZED'
             }
         }
+        console.log(state);
+        console.log(data)
         let options = {
             // Developer options
             debugging: false,

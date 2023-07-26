@@ -179,7 +179,6 @@ class SessionService:
                 status_code=403,
             )
         session = Session.parse_raw(session_str)
-
         return templates.TemplateResponse(
             "login.html",
             {
@@ -188,9 +187,9 @@ class SessionService:
                 "login_title": session.login_title,
                 "state": state,
                 "redirect_url": redirect_url,
-                "data-polling-interval": self._session_polling_interval,
-                "data-server-events-enabled": self._session_server_events_enabled,
-                "data-server-events-timeout": self._session_server_events_timeout
+                "session_polling_interval": self._session_polling_interval,
+                "session_server_events_enabled": self._session_server_events_enabled,
+                "session_server_events_timeout": self._session_server_events_timeout
             },
         )
 

@@ -9,20 +9,20 @@
 
         if data.server_events_enabled:
             let = serverSentEvents: {
-			  endpoint: 'statusevents',
-			  timeout:  data.server_events_timeout
-			}
-		else:
-			let serverSentEvents = False
+              endpoint: 'statusevents',
+              timeout:  data.server_events_timeout
+            }
+        else:
+            let serverSentEvents = False
 
         let state = {
-			serverSentEvents: serverSentEvents
-			polling: {
-			  endpoint:   'status',
-			  interval:   data.session_polling_interval,
-			  startState: 'INITIALIZED'
-			}
-		}
+            serverSentEvents: serverSentEvents
+            polling: {
+              endpoint:   'status',
+              interval:   data.session_polling_interval,
+              startState: 'INITIALIZED'
+            }
+        }
         let options = {
             // Developer options
             debugging: false,

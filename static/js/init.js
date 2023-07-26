@@ -17,6 +17,19 @@
                 loading: 'Just one second please!'
             },
 
+            state: {
+				serverSentEvents: {
+				  endpoint: 'statusevents',
+				  timeout:  2000
+				},
+
+				polling: {
+				  endpoint:   'status',
+				  interval:   1000,
+				  startState: 'INITIALIZED'
+				}
+			},
+
             // Back-end options
             session: {
                 start: {

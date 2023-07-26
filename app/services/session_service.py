@@ -21,6 +21,7 @@ from app.exceptions import (
 )
 from app.models import Session, SessionType, SessionStatus, SessionLoa
 from app.services.irma_service import IrmaService
+from app.dependencies import config
 
 REDIS_SESSION_KEY = "session"
 SESSION_NOT_FOUND_ERROR = "session%20not%20found"
@@ -51,6 +52,9 @@ class SessionService:
         jwt_issuer_crt_path: str,
         jwt_audience: str,
         mock_enabled: bool,
+        session_server_events_enabled: bool = False,
+        session_server_events_timeout: int = 2000,
+        session_polling_interval: int = 1000,
     ):
         self._redis_client = redis_client
         self._irma_service = irma_service
@@ -62,6 +66,9 @@ class SessionService:
         with open(jwt_issuer_crt_path, encoding="utf-8") as file:
             self._jwt_issuer_crt_path = JWK.from_pem(file.read().encode("utf-8"))
         self._mock_enabled = mock_enabled
+        self._session_server_events_enabled = session_server_events_enabled
+        self._session_server_events_timeout = session_server_events_timeout
+        self._session_polling_interval = session_polling_interval
 
     def create(self, raw_jwt: str):
         jwt = JWT(
@@ -182,6 +189,9 @@ class SessionService:
                 "login_title": session.login_title,
                 "state": state,
                 "redirect_url": redirect_url,
+                "data-polling-interval": self._session_polling_interval,
+                "data-server-events-enabled": self._session_server_events_enabled,
+                "data-server-events-timeout": self._session_server_events_timeout
             },
         )
 

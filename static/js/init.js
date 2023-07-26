@@ -6,6 +6,23 @@
                 window.location.assign(data.redirect_url + '?state='+ data.state +'&error=' + irmaPopup.stateMachine._state);
             }
         }
+
+        if data.server_events_enabled:
+            let = serverSentEvents: {
+			  endpoint: 'statusevents',
+			  timeout:  data.server_events_timeout
+			}
+		else:
+			let serverSentEvents = False
+
+        let state = {
+			serverSentEvents: serverSentEvents
+			polling: {
+			  endpoint:   'status',
+			  interval:   data.session_polling_interval,
+			  startState: 'INITIALIZED'
+			}
+		}
         let options = {
             // Developer options
             debugging: false,
@@ -16,19 +33,7 @@
                 header:  data.title + ' - login',
                 loading: 'Just one second please!'
             },
-
-            state: {
-				serverSentEvents: {
-				  endpoint: 'statusevents',
-				  timeout:  2000
-				},
-
-				polling: {
-				  endpoint:   'status',
-				  interval:   1000,
-				  startState: 'INITIALIZED'
-				}
-			},
+            state: state,
 
             // Back-end options
             session: {

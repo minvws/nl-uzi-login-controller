@@ -32,10 +32,10 @@ session_service_ = SessionService(
     session_server_events_enabled=config.getboolean(
         "irma", "session_server_events_enabled", fallback=False
     ),
-    session_server_events_timeout=config.get(
+    session_server_events_timeout=config.getint(
         "irma", "session_server_events_timeout", fallback=2000
     ),
-    session_polling_interval=config.get(
+    session_polling_interval=config.getint(
         "irma", "session_polling_interval", fallback=1000
     ),
 )

@@ -39,7 +39,9 @@ def rand_pass(size):
 templates = Jinja2Templates(directory="jinja2")
 
 
+# pylint: disable=too-many-instance-attributes
 class SessionService:
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         redis_client: Redis,
@@ -189,7 +191,7 @@ class SessionService:
                 "redirect_url": redirect_url,
                 "session_polling_interval": self._session_polling_interval,
                 "session_server_events_enabled": self._session_server_events_enabled,
-                "session_server_events_timeout": self._session_server_events_timeout
+                "session_server_events_timeout": self._session_server_events_timeout,
             },
         )
 

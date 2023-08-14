@@ -1,11 +1,6 @@
 (function(){
     addEventListener("load", (event) => {
         let data = document.getElementById("info").dataset
-        let handleState = function(state){
-            if(state === "Error"){
-                window.location.assign(data.redirect_url + '?state='+ data.state +'&error=' + irmaPopup.stateMachine._state);
-            }
-        }
 
         let serverSentEvents = undefined
         if (data.session_server_events_enabled.toLowerCase() === 'true') {
@@ -25,10 +20,11 @@
               startState: 'INITIALIZED'
             }
         }
+
         let options = {
             // Developer options
             debugging: false,
-    
+
             // Front-end options
             language:  'en',
             translations: {
@@ -40,7 +36,7 @@
             // Back-end options
             session: {
                 start: {
-                    url: o => `${o.url}` + '/session/' + data.exchange_token + '/irma',
+                    url: o => `${o.url}` + '/session/' + data.exchange_token + '/yivi',
                 },
                 result: false,
                 mapping: {
@@ -49,22 +45,16 @@
             },
         };
 
-        const irmaPopup = irma.newPopup({
+        const yiviPopup = yivi.newPopup({
             ...options,
-            element: '#irma-web-form'
+            element: '#yivi-web-form'
         });
-
-        handleState(irmaPopup.stateMachine._state)
-        setInterval(function () {
-            handleState(irmaPopup.stateMachine._state)
-        }, 1000);
-
-        irmaPopup.start()
-            .then(() => {
-                window.location.assign(data.redirect_url + '?state=' + data.state);
-            })
-            .catch((err) => {
-                window.location.assign(data.redirect_url + '?state=' + data.state + '&error=' + irmaPopup.stateMachine._state);
-            });
+        yiviPopup.start().then(() => {
+	            window.location.assign(data.redirect_url + '?state=' + data.state);
+	        })
+	        .catch((err) => {
+	            console.log(err);
+	            window.location.assign(data.redirect_url + '?state=' + data.state + '&error=' + data.state);
+	        });
     });
 })();

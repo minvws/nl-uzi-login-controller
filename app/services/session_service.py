@@ -1,9 +1,13 @@
+import base64
+import hashlib
 import json
 import logging
 import random
+import secrets
 import string
 import time
 from typing import Union
+import requests
 
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
@@ -224,3 +228,48 @@ class SessionService:
             url=f"{redirect_url}?state={state}&exchange_token={session.exchange_token}",
             status_code=303,
         )
+
+    def login_oidc(self):
+        # code_verifier = secrets.token_urlsafe(96)[:64]
+        # hashed = hashlib.sha256(code_verifier.encode('ascii')).digest()
+        # encoded = base64.urlsafe_b64encode(hashed)
+        # code_challenge = encoded.decode('ascii')[:-1]
+        # print("code:" + code_verifier)
+        # print("challenge:" + code_challenge)
+        # raise HTTPException(status_code=404)
+        # code:EqRtmQ-m0hG7S6uJjQIyQYMze9lEDch0UbRJ9jmMyYFgbORMRdzrA4wE9F2cEqtK
+        # challenge:2wsLrZz80Ez11hD5nV4ygJ8HiwoI3oWTj9wISurXcnk
+        return RedirectResponse(
+            url="https://accounts.google.com/o/oauth2/v2/auth?client_id=857185457066-vtl87j07d7e7f1783ma5u5u4c83ck56s.apps.googleusercontent.com&response_type=code&scope=openid%20email&redirect_uri=http://localhost:12003/login/oidc/callback&state=c3RhdGU=&nonce=M_lY4gz2tEAzm65Ql7_5-1X7CpNwbuDijhjeDbn4Hgk&code_challenge_method=S256&code_challenge=2wsLrZz80Ez11hD5nV4ygJ8HiwoI3oWTj9wISurXcnk",
+            status_code=303,
+        )
+
+    def login_oidc_callback(self, code: str):
+        print("code", code)
+        print("code_verifier", "EqRtmQ-m0hG7S6uJjQIyQYMze9lEDch0UbRJ9jmMyYFgbORMRdzrA4wE9F2cEqtK")
+        resp = requests.post(
+            "https://oauth2.googleapis.com/token",
+            timeout=30,
+            data={
+                "code": code,
+                "code_verifier": "EqRtmQ-m0hG7S6uJjQIyQYMze9lEDch0UbRJ9jmMyYFgbORMRdzrA4wE9F2cEqtK",
+                "client_id": "857185457066-vtl87j07d7e7f1783ma5u5u4c83ck56s.apps.googleusercontent.com",
+                "client_secret": "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",
+                "grant_type": "authorization_code",
+                "redirect_uri": "http://localhost:12003/login/oidc/callback",
+            }
+        )
+
+        resp = requests.get(
+            "https://openidconnect.googleapis.com/v1/userinfo",
+            timeout=30,
+            headers={
+                "Authorization": "Bearer " + resp.json()["access_token"]
+            }
+        )
+
+        # https://openidconnect.googleapis.com/v1/userinfo
+        result = resp.json()
+        print(resp.status_code)
+        print(result["email"])
+        raise HTTPException(status_code=404)

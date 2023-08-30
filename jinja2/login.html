@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>{{ login_title }} - login</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="/static/irmajs-v0.4.2/irma.js"></script>
+    <script src="/static/dist/yivi.js"></script>
     <script src="/static/js/init.js"></script>
 </head>
 
@@ -12,13 +12,14 @@
     <section class="bg-color-offset auth">
         <div>
             <div class="tile options-overview">
-                <div id="irma-web-form"></div>
+                <div id="yivi-web-form"></div>
             </div>
         </div>
     </section>
     <div id="info"
      data-title="{{ login_title }}"
      data-redirect_url="{{ redirect_url }}"
+     data-base_url="{{ base_url }}"
      data-exchange_token="{{ exchange_token }}"
      data-state="{{ state }}"
      data-session_polling_interval="{{ session_polling_interval }}"

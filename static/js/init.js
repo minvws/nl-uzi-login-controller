@@ -20,7 +20,6 @@
               startState: 'INITIALIZED'
             }
         }
-
         let options = {
             // Developer options
             debugging: false,
@@ -36,7 +35,7 @@
             // Back-end options
             session: {
                 start: {
-                    url: o => `${o.url}` + '/session/' + data.exchange_token + '/yivi',
+                    url: o => data.base_url + '/session/' + data.exchange_token + '/yivi',
                 },
                 result: false,
                 mapping: {
@@ -44,7 +43,7 @@
                 },
             },
         };
-
+		console.log(options);
         const yiviPopup = yivi.newPopup({
             ...options,
             element: '#yivi-web-form'

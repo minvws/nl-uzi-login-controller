@@ -4,7 +4,6 @@ import random
 import string
 import time
 from typing import Union
-from configparser import ConfigParser
 
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
@@ -29,8 +28,6 @@ SESSION_NOT_FOUND_ERROR = "session%20not%20found"
 
 
 logger = logging.getLogger(__name__)
-config = ConfigParser()
-config.read("app.conf")
 
 
 def rand_pass(size):
@@ -185,7 +182,6 @@ class SessionService:
                 status_code=403,
             )
         session = Session.parse_raw(session_str)
-
         return templates.TemplateResponse(
             "login.html",
             {
@@ -194,7 +190,6 @@ class SessionService:
                 "login_title": session.login_title,
                 "state": state,
                 "redirect_url": redirect_url,
-                "base_url": config.get('app', 'base_url'),
                 "session_polling_interval": self._session_polling_interval,
                 "session_server_events_enabled": self._session_server_events_enabled,
                 "session_server_events_timeout": self._session_server_events_timeout,

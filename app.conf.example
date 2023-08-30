@@ -1,5 +1,4 @@
 [app]
-base_url = https://localhost:8006
 redirect_url = https://localhost:8006/continue
 mock_enabled = False
 

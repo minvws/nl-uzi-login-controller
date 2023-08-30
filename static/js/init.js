@@ -43,7 +43,7 @@
                 },
             },
         };
-		console.log(options);
+
         const yiviPopup = yivi.newPopup({
             ...options,
             element: '#yivi-web-form'

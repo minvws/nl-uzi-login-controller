@@ -50,11 +50,16 @@
             element: '#yivi-web-form'
         });
         yiviPopup.start().then(() => {
-	            window.location.assign(data.redirect_url + '?state=' + data.state);
-	        })
-	        .catch((err) => {
-	            console.log(err);
-	            window.location.assign(data.redirect_url + '?state=' + data.state + '&error=' + data.state);
-	        });
+            window.location.assign(data.redirect_url + '?state=' + data.state);
+        })
+        .catch((err) => {
+            if (err === 'Aborted') {
+                window.location.assign(data.redirect_url + '?state=' + data.state + '&error=login_required');
+            } else {
+                let url = new URL(data.redirect_url + '?state=' + data.state + '&error=unknown_exception');
+                url.searchParams.append('error_description', err);
+                window.location.assign(url);
+            }
+        });
     });
 })();

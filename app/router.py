@@ -37,7 +37,7 @@ async def session_status(
         raise HTTPException(status_code=404, detail="Session expired") from exp
 
 
-@router.get("/session/{exchange_token}/irma")
+@router.get("/session/{exchange_token}/yivi")
 def irma_session(
     exchange_token: str,
     session_service: SessionService = Depends(lambda: session_service_),
@@ -65,7 +65,7 @@ def result(
         raise HTTPException(status_code=404, detail="Session expired") from exp
 
 
-@router.get("/login/irma/{exchange_token}")
+@router.get("/login/yivi/{exchange_token}")
 def page(
     exchange_token: str,
     state: str,

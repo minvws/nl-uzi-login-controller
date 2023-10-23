@@ -14,15 +14,15 @@ from app.utils import rand_pass, nonce
 
 class OidcService:
     def __init__(
-            self,
-            redis_client: Redis,
-            authorize_endpoint: str, # TODO GB: Use wellkown endpoint
-            token_endpoint: str,
-            userinfo_endpoint: str,
-            client_id: str,
-            client_secret: str,
-            redirect_uri: str,
-            scopes: List[str],
+        self,
+        redis_client: Redis,
+        authorize_endpoint: str,  # TODO GB: Use wellkown endpoint
+        token_endpoint: str,
+        userinfo_endpoint: str,
+        client_id: str,
+        client_secret: str,
+        redirect_uri: str,
+        scopes: List[str],
     ):
         self._redis_client = redis_client
         self._authorize_endpoint = authorize_endpoint
@@ -33,7 +33,6 @@ class OidcService:
         self._redirect_uri = redirect_uri
         self._scopes = scopes
 
-
     def get_authorize_response(
         self,
         exchange_token: str,
@@ -41,9 +40,9 @@ class OidcService:
         redirect_url: str,
     ):
         code_verifier = secrets.token_urlsafe(96)[:64]
-        hashed = hashlib.sha256(code_verifier.encode('ascii')).digest()
+        hashed = hashlib.sha256(code_verifier.encode("ascii")).digest()
         encoded = base64.urlsafe_b64encode(hashed)
-        code_challenge = encoded.decode('ascii')[:-1]
+        code_challenge = encoded.decode("ascii")[:-1]
 
         oidc_state = rand_pass(100)
         login_state = {
@@ -60,14 +59,14 @@ class OidcService:
         params = {
             "client_id": self._client_id,
             "response_type": "code",
-            "scope": ' '.join(self._scopes),
+            "scope": " ".join(self._scopes),
             "redirect_uri": self._redirect_uri,
             "state": oidc_state,
             "nonce": nonce(50),
             "code_challenge_method": "S256",
             "code_challenge": code_challenge,
         }
-        url = self._authorize_endpoint + '?' + urlencode(params)
+        url = self._authorize_endpoint + "?" + urlencode(params)
         return RedirectResponse(
             url=url,
             status_code=303,
@@ -88,15 +87,13 @@ class OidcService:
                 "client_secret": self._client_secret,
                 "grant_type": "authorization_code",
                 "redirect_uri": self._redirect_uri,
-            }
+            },
         )
 
         resp = requests.get(
             self._userinfo_endpoint,
             timeout=30,
-            headers={
-                "Authorization": "Bearer " + resp.json()["access_token"]
-            }
+            headers={"Authorization": "Bearer " + resp.json()["access_token"]},
         )
         if resp.headers["Content-Type"] != "application/jwt":
             return Exception("Unsupported media type")

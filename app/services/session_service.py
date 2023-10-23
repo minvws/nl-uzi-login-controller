@@ -1,13 +1,7 @@
-import base64
-import hashlib
 import json
 import logging
-import random
-import secrets
-import string
 import time
 from typing import Union
-import requests
 
 from configparser import ConfigParser
 from fastapi import HTTPException
@@ -235,20 +229,9 @@ class SessionService:
         )
 
     def login_oidc(self, exchange_token, state, redirect_url):
-        return self._oidc_service.get_authorize_response(exchange_token, state, redirect_url)
-        # code_verifier = secrets.token_urlsafe(96)[:64]
-        # hashed = hashlib.sha256(code_verifier.encode('ascii')).digest()
-        # encoded = base64.urlsafe_b64encode(hashed)
-        # code_challenge = encoded.decode('ascii')[:-1]
-        # print("code:" + code_verifier)
-        # print("challenge:" + code_challenge)
-        # raise HTTPException(status_code=404)
-        # code:EqRtmQ-m0hG7S6uJjQIyQYMze9lEDch0UbRJ9jmMyYFgbORMRdzrA4wE9F2cEqtK
-        # challenge:2wsLrZz80Ez11hD5nV4ygJ8HiwoI3oWTj9wISurXcnk
-        # return RedirectResponse(
-        #     url="https://accounts.google.com/o/oauth2/v2/auth?client_id=857185457066-vtl87j07d7e7f1783ma5u5u4c83ck56s.apps.googleusercontent.com&response_type=code&scope=openid%20email&redirect_uri=http://localhost:8001/login/oidc/callback&state=c3RhdGU=&nonce=M_lY4gz2tEAzm65Ql7_5-1X7CpNwbuDijhjeDbn4Hgk&code_challenge_method=S256&code_challenge=2wsLrZz80Ez11hD5nV4ygJ8HiwoI3oWTj9wISurXcnk",
-        #     status_code=303,
-        # )
+        return self._oidc_service.get_authorize_response(
+            exchange_token, state, redirect_url
+        )
 
     def login_oidc_callback(self, state: str, code: str):
         userinfo_jwt, login_state = self._oidc_service.get_userinfo(state, code)

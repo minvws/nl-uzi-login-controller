@@ -21,8 +21,7 @@ jwt_crt_content = file_content_raise_if_none(config.get("app", "jwt_crt_path"))
 _redis_client = create_redis_client(config["redis"])
 
 jwt_service = JwtService(
-    jwt_priv_key=jwt_priv_key,
-    crt_kid=kid_from_certificate(jwt_crt_content)
+    jwt_priv_key=jwt_priv_key, crt_kid=kid_from_certificate(jwt_crt_content)
 )
 irma_service = IrmaService(
     irma_internal_server_url=config["irma"]["irma_internal_server_url"],

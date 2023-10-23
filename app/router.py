@@ -113,32 +113,27 @@ async def uzi_login(
         exchange_token, state, redirect_url, user["UziNumber"]
     )
 
+
 @router.get("/login/oidc/start/{exchange_token}")
-async def uzi_login(
+async def oidc_login(
     exchange_token: str,
     state: str,
-    request: Request,
     redirect_url: str = Depends(lambda: redirect_url_),
     session_service: SessionService = Depends(lambda: session_service_),
 ):
     """
     Read cert from uzi card and login
     """
-    return session_service.login_oidc(
-        exchange_token, state, redirect_url
-    )
+    return session_service.login_oidc(exchange_token, state, redirect_url)
+
 
 @router.get("/login/oidc/callback")
-async def uzi_login(
+async def callback_login(
     state: str,
     code: str,
-    request: Request,
     session_service: SessionService = Depends(lambda: session_service_),
 ):
     """
     Read cert from uzi card and login
     """
-    return session_service.login_oidc_callback(
-        state,
-        code
-    )
+    return session_service.login_oidc_callback(state, code)

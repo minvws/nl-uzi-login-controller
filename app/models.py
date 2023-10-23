@@ -13,6 +13,7 @@ class SessionLoa(str, Enum):
 class SessionType(str, Enum):
     IRMA = "irma"
     UZI_CARD = "uzi_card"
+    OIDC = "oidc"
 
 
 class SessionStatus(str, Enum):

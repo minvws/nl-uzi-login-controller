@@ -26,7 +26,9 @@ from app.exceptions import (
 )
 from app.models import Session, SessionType, SessionStatus, SessionLoa
 from app.services.irma_service import IrmaService
-
+from app.services.jwt_service import JwtService
+from app.services.oidc_service import OidcService
+from app.utils import rand_pass
 
 REDIS_SESSION_KEY = "session"
 SESSION_NOT_FOUND_ERROR = "session%20not%20found"
@@ -35,14 +37,6 @@ SESSION_NOT_FOUND_ERROR = "session%20not%20found"
 logger = logging.getLogger(__name__)
 config = ConfigParser()
 config.read("app.conf")
-
-
-def rand_pass(size):
-    generate_pass = "".join(
-        [random.choice(string.ascii_lowercase + string.digits) for _ in range(size)]
-    )
-    return generate_pass
-
 
 templates = Jinja2Templates(directory="jinja2")
 
@@ -54,6 +48,8 @@ class SessionService:
         self,
         redis_client: Redis,
         irma_service: IrmaService,
+        oidc_service: OidcService,
+        jwt_service: JwtService,
         irma_disclose_prefix: str,
         redis_namespace: str,
         expires_in_s: int,
@@ -61,12 +57,15 @@ class SessionService:
         jwt_issuer_crt_path: str,
         jwt_audience: str,
         mock_enabled: bool,
+        oidc_provider_pub_key: JWK,
         session_server_events_enabled: bool = False,
         session_server_events_timeout: int = 2000,
         session_polling_interval: int = 1000,
     ):
         self._redis_client = redis_client
         self._irma_service = irma_service
+        self._oidc_service = oidc_service
+        self._jwt_service = jwt_service
         self._irma_disclose_prefix = irma_disclose_prefix
         self._redis_namespace = redis_namespace
         self._expires_in_s = expires_in_s
@@ -75,6 +74,7 @@ class SessionService:
         with open(jwt_issuer_crt_path, encoding="utf-8") as file:
             self._jwt_issuer_crt_path = JWK.from_pem(file.read().encode("utf-8"))
         self._mock_enabled = mock_enabled
+        self._oidc_provider_pub_key = oidc_provider_pub_key
         self._session_server_events_enabled = session_server_events_enabled
         self._session_server_events_timeout = session_server_events_timeout
         self._session_polling_interval = session_polling_interval
@@ -234,7 +234,8 @@ class SessionService:
             status_code=303,
         )
 
-    def login_oidc(self):
+    def login_oidc(self, exchange_token, state, redirect_url):
+        return self._oidc_service.get_authorize_response(exchange_token, state, redirect_url)
         # code_verifier = secrets.token_urlsafe(96)[:64]
         # hashed = hashlib.sha256(code_verifier.encode('ascii')).digest()
         # encoded = base64.urlsafe_b64encode(hashed)
@@ -244,37 +245,42 @@ class SessionService:
         # raise HTTPException(status_code=404)
         # code:EqRtmQ-m0hG7S6uJjQIyQYMze9lEDch0UbRJ9jmMyYFgbORMRdzrA4wE9F2cEqtK
         # challenge:2wsLrZz80Ez11hD5nV4ygJ8HiwoI3oWTj9wISurXcnk
+        # return RedirectResponse(
+        #     url="https://accounts.google.com/o/oauth2/v2/auth?client_id=857185457066-vtl87j07d7e7f1783ma5u5u4c83ck56s.apps.googleusercontent.com&response_type=code&scope=openid%20email&redirect_uri=http://localhost:8001/login/oidc/callback&state=c3RhdGU=&nonce=M_lY4gz2tEAzm65Ql7_5-1X7CpNwbuDijhjeDbn4Hgk&code_challenge_method=S256&code_challenge=2wsLrZz80Ez11hD5nV4ygJ8HiwoI3oWTj9wISurXcnk",
+        #     status_code=303,
+        # )
+
+    def login_oidc_callback(self, state: str, code: str):
+        userinfo_jwt, login_state = self._oidc_service.get_userinfo(state, code)
+        claims = self._jwt_service.from_jwt(self._oidc_provider_pub_key, userinfo_jwt)
+        exchange_token = login_state["exchange_token"]
+        redirect_url = login_state["redirect_url"]
+        state = login_state["state"]
+
+        session_str: Union[str, None] = self._redis_client.get(
+            f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
+        )
+        if not session_str:
+            return RedirectResponse(
+                url=f"{redirect_url}?state={state}&error={SESSION_NOT_FOUND_ERROR}",
+                status_code=403,
+            )
+
+        session: Session = Session.parse_raw(session_str)
+        if not session.session_type == SessionType.OIDC:
+            logger.warning("Session type is not OIDC")
+            return HTTPException(status_code=404)
+        session.session_status = SessionStatus.DONE
+        session.uzi_id = claims["signed_uzi_number"]
+        session.loa_authn = SessionLoa.HIGH
+
+        self._redis_client.set(
+            f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{session.exchange_token}",
+            session.json(),
+            ex=self._expires_in_s,
+        )
+
         return RedirectResponse(
-            url="https://accounts.google.com/o/oauth2/v2/auth?client_id=857185457066-vtl87j07d7e7f1783ma5u5u4c83ck56s.apps.googleusercontent.com&response_type=code&scope=openid%20email&redirect_uri=http://localhost:12003/login/oidc/callback&state=c3RhdGU=&nonce=M_lY4gz2tEAzm65Ql7_5-1X7CpNwbuDijhjeDbn4Hgk&code_challenge_method=S256&code_challenge=2wsLrZz80Ez11hD5nV4ygJ8HiwoI3oWTj9wISurXcnk",
+            url=f"{redirect_url}?state={state}&exchange_token={session.exchange_token}",
             status_code=303,
         )
-
-    def login_oidc_callback(self, code: str):
-        print("code", code)
-        print("code_verifier", "EqRtmQ-m0hG7S6uJjQIyQYMze9lEDch0UbRJ9jmMyYFgbORMRdzrA4wE9F2cEqtK")
-        resp = requests.post(
-            "https://oauth2.googleapis.com/token",
-            timeout=30,
-            data={
-                "code": code,
-                "code_verifier": "EqRtmQ-m0hG7S6uJjQIyQYMze9lEDch0UbRJ9jmMyYFgbORMRdzrA4wE9F2cEqtK",
-                "client_id": "857185457066-vtl87j07d7e7f1783ma5u5u4c83ck56s.apps.googleusercontent.com",
-                "client_secret": "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",
-                "grant_type": "authorization_code",
-                "redirect_uri": "http://localhost:12003/login/oidc/callback",
-            }
-        )
-
-        resp = requests.get(
-            "https://openidconnect.googleapis.com/v1/userinfo",
-            timeout=30,
-            headers={
-                "Authorization": "Bearer " + resp.json()["access_token"]
-            }
-        )
-
-        # https://openidconnect.googleapis.com/v1/userinfo
-        result = resp.json()
-        print(resp.status_code)
-        print(result["email"])
-        raise HTTPException(status_code=404)

@@ -125,6 +125,7 @@ async def uzi_login(
     Read cert from uzi card and login
     """
     return session_service.login_oidc(
+        exchange_token, state, redirect_url
     )
 
 @router.get("/login/oidc/callback")
@@ -138,5 +139,6 @@ async def uzi_login(
     Read cert from uzi card and login
     """
     return session_service.login_oidc_callback(
+        state,
         code
     )

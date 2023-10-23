@@ -2,6 +2,9 @@
 base_url = http://localhost:8001
 redirect_url = https://localhost:8006/continue
 mock_enabled = False
+jwt_priv_key_path = secrets/nl-uzi-login-controller.key
+jwt_pub_key_path = secrets/nl-uzi-login-controller.pub
+jwt_crt_path = secrets/nl-uzi-login-controller.crt
 
 [session]
 jwt_issuer=nl-rdo-max-private

@@ -121,9 +121,6 @@ async def oidc_login(
     redirect_url: str = Depends(lambda: redirect_url_),
     session_service: SessionService = Depends(lambda: session_service_),
 ):
-    """
-    Read cert from uzi card and login
-    """
     return session_service.login_oidc(exchange_token, state, redirect_url)
 
 
@@ -133,7 +130,4 @@ async def callback_login(
     code: str,
     session_service: SessionService = Depends(lambda: session_service_),
 ):
-    """
-    Read cert from uzi card and login
-    """
     return session_service.login_oidc_callback(state, code)

@@ -9,7 +9,7 @@ from app.exceptions import general_exception_handler
 from app.router import router
 
 
-def run_app():
+def run_app() -> FastAPI:
     loglevel = logging.getLevelName(
         config.get("app", "loglevel", fallback="debug").upper()
     )
@@ -26,7 +26,7 @@ def run_app():
     return fastapi
 
 
-def kwargs_from_config():
+def kwargs_from_config() -> dict:
     kwargs = {
         "host": config.get("uvicorn", "host"),
         "port": config.getint("uvicorn", "port"),

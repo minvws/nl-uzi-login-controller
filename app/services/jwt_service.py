@@ -12,20 +12,20 @@ logger = logging.getLogger(__name__)
 
 
 class JwtService:
-    def __init__(self, jwt_priv_key: JWK, crt_kid):
+    def __init__(self, jwt_priv_key: JWK, crt_kid: str) -> None:
         self._jwt_priv_key = jwt_priv_key
         self._crt_kid = crt_kid
 
-    def create_jwt(self, payload: Dict[str, Any]):
+    def create_jwt(self, payload: Dict[str, Any]) -> str:
         return create_jwt(self._jwt_priv_key, self._crt_kid, payload)
 
-    def create_jwe(self, jwe_enc_pub_key: JWK, payload: Dict[str, Any]):
+    def create_jwe(self, jwe_enc_pub_key: JWK, payload: Dict[str, Any]) -> str:
         return create_jwe(self._jwt_priv_key, self._crt_kid, jwe_enc_pub_key, payload)
 
-    def from_jwt(self, jwt_pub_key: JWK, jwt: str):
+    def from_jwt(self, jwt_pub_key: JWK, jwt: str) -> Dict[str, Any]:
         return from_jwt(jwt_pub_key, jwt)
 
-    def from_jwe(self, jwt_pub_key: JWK, jwe: str):
+    def from_jwe(self, jwt_pub_key: JWK, jwe: str) -> Dict[str, Any]:
         return from_jwe(self._jwt_priv_key, jwt_pub_key, jwe)
 
 

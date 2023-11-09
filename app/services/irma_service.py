@@ -18,10 +18,12 @@ class IrmaService:
         irma_internal_server_url: str,
         irma_disclose_prefix: str,
         irma_revocation: bool,
+        http_timeout: int,
     ):
         self._irma_internal_server_url = irma_internal_server_url
         self._irma_disclose_prefix = irma_disclose_prefix
         self._irma_revocation = irma_revocation
+        self._http_timeout = http_timeout
 
     def create_disclose_session(
         self, requested_disclosures: List[Dict[str, str]]
@@ -55,10 +57,10 @@ class IrmaService:
             raise IrmaServerException()
         return irma_response.text
 
-    def fetch_disclose_result(self, token: str):
+    def fetch_disclose_result(self, token: str) -> Dict:
         irma_response = requests.get(
             f"{self._irma_internal_server_url}" + f"/session/{token}/result",
-            timeout=30,
+            timeout=self._http_timeout,
         )
 
         if irma_response.status_code >= 400:

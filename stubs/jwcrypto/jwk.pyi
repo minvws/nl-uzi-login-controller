@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from _typeshed import Incomplete
 from enum import Enum
 from jwcrypto.common import JWException as JWException, base64url_decode as base64url_decode, base64url_encode as base64url_encode, json_decode as json_decode, json_encode as json_encode

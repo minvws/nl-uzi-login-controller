@@ -5,6 +5,7 @@ mock_enabled = False
 jwt_priv_key_path = secrets/nl-uzi-login-controller.key
 jwt_pub_key_path = secrets/nl-uzi-login-controller.pub
 jwt_crt_path = secrets/nl-uzi-login-controller.crt
+http_timeout = 30
 
 [session]
 jwt_issuer=nl-rdo-max-private
@@ -16,7 +17,7 @@ jwt_audience=nl-uzi-login-controller
 host = localhost
 port = 6379
 namespace = nl-uzi-login-controller
-expire = 60
+expire = 300
 ssl = False
 key =
 cert =

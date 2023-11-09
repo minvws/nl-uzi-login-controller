@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import unittest
 from _typeshed import Incomplete
 from jwcrypto import jwe as jwe, jwk as jwk, jws as jws

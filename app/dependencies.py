@@ -23,10 +23,12 @@ _redis_client = create_redis_client(config["redis"])
 jwt_service = JwtService(
     jwt_priv_key=jwt_priv_key, crt_kid=kid_from_certificate(jwt_crt_content)
 )
+
 irma_service = IrmaService(
     irma_internal_server_url=config["irma"]["irma_internal_server_url"],
     irma_disclose_prefix=config["irma"]["irma_disclose_prefix"],
     irma_revocation=bool(config["irma"]["irma_revocation"]),
+    http_timeout=config.getint("app", "http_timeout", fallback=30),
 )
 
 oidc_service = OidcService(
@@ -38,8 +40,9 @@ oidc_service = OidcService(
     client_secret=config["oidc_provider"]["client_secret"],
     redirect_uri=config["oidc_provider"]["redirect_uri"],
     scopes=config["oidc_provider"]["scopes"].split(),
+    http_timeout=config.getint("app", "http_timeout", fallback=30),
+    cache_expire=config.getint("redis", "expire", fallback=60),
 )
-
 
 session_service_ = SessionService(
     redis_client=_redis_client,

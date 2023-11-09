@@ -4,8 +4,8 @@ import time
 from typing import Union
 
 from configparser import ConfigParser
-from fastapi import HTTPException
 from fastapi.responses import JSONResponse
+from fastapi import Request, HTTPException
 from redis import Redis
 from jwcrypto.jwt import JWT
 from jwcrypto.jwk import JWK
@@ -73,7 +73,7 @@ class SessionService:
         self._session_server_events_timeout = session_server_events_timeout
         self._session_polling_interval = session_polling_interval
 
-    def create(self, raw_jwt: str):
+    def create(self, raw_jwt: str) -> JSONResponse:
         jwt = JWT(
             jwt=raw_jwt,
             key=self._jwt_issuer_crt_path,
@@ -107,14 +107,14 @@ class SessionService:
         )
         return JSONResponse(session.exchange_token)
 
-    def irma(self, exchange_token: str):
+    def irma(self, exchange_token: str) -> JSONResponse:
         session = self._token_to_session(exchange_token)
         if session.irma_disclose_response is None:
             raise IrmaServerException()
         irma_session = json.loads(session.irma_disclose_response)
         return JSONResponse(irma_session["sessionPtr"])
 
-    def status(self, exchange_token):
+    def status(self, exchange_token: str) -> JSONResponse:
         session = self._token_to_session(exchange_token)
         self._poll_status_irma(session)
         return JSONResponse(session.session_status)
@@ -128,7 +128,7 @@ class SessionService:
         session = Session.parse_raw(session_str)
         return session
 
-    def _poll_status_irma(self, session: Session):
+    def _poll_status_irma(self, session: Session) -> None:
         if session.session_status == SessionStatus.DONE:
             return
 
@@ -160,7 +160,7 @@ class SessionService:
                 )
                 session.session_status = SessionStatus.DONE
 
-    def result(self, exchange_token) -> Response:
+    def result(self, exchange_token: str) -> Response:
         if self._mock_enabled and exchange_token == "mocked_exchange_token":
             return JSONResponse(
                 {"uzi_id": "123456789", "loa_authn": SessionLoa.SUBSTANTIAL}
@@ -173,7 +173,9 @@ class SessionService:
             raise GeneralServerException()
         return JSONResponse({"uzi_id": session.uzi_id, "loa_authn": session.loa_authn})
 
-    def login_irma(self, exchange_token, state, request, redirect_url) -> Response:
+    def login_irma(
+        self, exchange_token: str, state: str, request: Request, redirect_url: str
+    ) -> Response:
         session_str: Union[str, None] = self._redis_client.get(
             f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
         )
@@ -199,7 +201,7 @@ class SessionService:
         )
 
     def login_uzi(
-        self, exchange_token, state, redirect_url, uzi_id
+        self, exchange_token: str, state: str, redirect_url: str, uzi_id: str
     ) -> Union[RedirectResponse, HTTPException]:
         session_str: Union[str, None] = self._redis_client.get(
             f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
@@ -228,12 +230,16 @@ class SessionService:
             status_code=303,
         )
 
-    def login_oidc(self, exchange_token, state, redirect_url):
+    def login_oidc(
+        self, exchange_token: str, state: str, redirect_url: str
+    ) -> RedirectResponse:
         return self._oidc_service.get_authorize_response(
             exchange_token, state, redirect_url
         )
 
-    def login_oidc_callback(self, state: str, code: str):
+    def login_oidc_callback(
+        self, state: str, code: str
+    ) -> Union[RedirectResponse, HTTPException]:
         userinfo_jwt, login_state = self._oidc_service.get_userinfo(state, code)
         claims = self._jwt_service.from_jwt(self._oidc_provider_pub_key, userinfo_jwt)
         exchange_token = login_state["exchange_token"]

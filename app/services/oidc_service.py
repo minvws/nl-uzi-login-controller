@@ -3,16 +3,19 @@ import hashlib
 import json
 import secrets
 from urllib.parse import urlencode
-from typing import List
+from typing import List, Union, Tuple
 
 import requests
+from fastapi.exceptions import RequestValidationError
 from redis import Redis
 from starlette.responses import RedirectResponse
 
+from app.exceptions import InvalidStateException
 from app.utils import rand_pass, nonce
 
 
 class OidcService:
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         redis_client: Redis,
@@ -23,6 +26,8 @@ class OidcService:
         client_secret: str,
         redirect_uri: str,
         scopes: List[str],
+        http_timeout: int,
+        cache_expire: int,
     ):
         self._redis_client = redis_client
         self._authorize_endpoint = authorize_endpoint
@@ -32,13 +37,15 @@ class OidcService:
         self._client_secret = client_secret
         self._redirect_uri = redirect_uri
         self._scopes = scopes
+        self._http_timeout = http_timeout
+        self._cache_expire = cache_expire
 
     def get_authorize_response(
         self,
         exchange_token: str,
         state: str,
         redirect_url: str,
-    ):
+    ) -> RedirectResponse:
         code_verifier = secrets.token_urlsafe(96)[:64]
         hashed = hashlib.sha256(code_verifier.encode("ascii")).digest()
         encoded = base64.urlsafe_b64encode(hashed)
@@ -54,7 +61,7 @@ class OidcService:
 
         redis_key = "oidc_state_" + oidc_state
         self._redis_client.set(redis_key, json.dumps(login_state))
-        self._redis_client.expire(redis_key, 60 * 5)
+        self._redis_client.expire(redis_key, self._cache_expire)
 
         params = {
             "client_id": self._client_id,
@@ -72,14 +79,20 @@ class OidcService:
             status_code=303,
         )
 
-    def get_userinfo(self, state, code):
-        login_state = self._redis_client.get("oidc_state_" + state)
-        login_state = json.loads(login_state)
+    def get_userinfo(self, state: str, code: str) -> Tuple[str, dict]:
+        login_state_from_redis: Union[str, None] = self._redis_client.get(
+            "oidc_state_" + state
+        )
+        if not login_state_from_redis:
+            raise InvalidStateException()
+        login_state: dict = json.loads(login_state_from_redis)
+        if not login_state:
+            raise InvalidStateException()
 
         # TODO GB: error handling
         resp = requests.post(
             self._token_endpoint,
-            timeout=30,
+            timeout=self._http_timeout,
             data={
                 "code": code,
                 "code_verifier": login_state["code_verifier"],
@@ -92,10 +105,10 @@ class OidcService:
 
         resp = requests.get(
             self._userinfo_endpoint,
-            timeout=30,
+            timeout=self._http_timeout,
             headers={"Authorization": "Bearer " + resp.json()["access_token"]},
         )
         if resp.headers["Content-Type"] != "application/jwt":
-            return Exception("Unsupported media type")
+            raise RequestValidationError("Unsupported media type")
         # TODO GB: move redis cache to session_service
-        return (resp.text, login_state)
+        return resp.text, login_state

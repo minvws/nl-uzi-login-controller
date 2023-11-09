@@ -8,12 +8,12 @@ from Cryptodome.Hash import SHA256
 from jwcrypto.jwk import JWK
 
 
-def rand_pass(size):
+def rand_pass(size: int) -> str:
     return secrets.token_urlsafe(size)
 
 
-def nonce(size):
-    return secrets.token_urlsafe(size)
+def nonce(size: int) -> str:
+    return rand_pass(size)
 
 
 def load_jwk(filepath: str) -> JWK:

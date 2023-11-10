@@ -8,6 +8,16 @@ from jwcrypto.jwe import JWE
 from jwcrypto.jwk import JWK
 from jwcrypto.jwt import JWT
 
+JWT_EXP_MARGIN = 60
+
+JWT_NBF_MARGIN = 10
+
+JWE_ENC = "A128CBC-HS256"
+JWE_ALG = "RSA-OAEP"
+JWE_CTY = "JWT"
+JWE_TYP = "JWT"
+JWT_ALG = "RS256"
+
 logger = logging.getLogger(__name__)
 
 
@@ -47,14 +57,14 @@ def create_jwt(
     payload: Dict[str, Any],
 ) -> str:
     jwt_header = {
-        "alg": "RS256",
+        "alg": JWT_ALG,
         "x5t": jwt_priv_key.thumbprint(hashes.SHA256()),
         "kid": crt_kid,
     }
     jwt_payload = {
         **{
-            "nbf": int(time.time()) - 10,
-            "exp": int(time.time()) + 60,
+            "nbf": int(time.time()) - JWT_NBF_MARGIN,
+            "exp": int(time.time()) + JWT_EXP_MARGIN,
         },
         **payload,
     }
@@ -75,10 +85,10 @@ def create_jwe(
     jwt_token = create_jwt(jwt_priv_key, crt_kid, payload)
 
     jwe_header = {
-        "typ": "JWT",
-        "cty": "JWT",
-        "alg": "RSA-OAEP",
-        "enc": "A128CBC-HS256",
+        "typ": JWE_TYP,
+        "cty": JWE_CTY,
+        "alg": JWE_ALG,
+        "enc": JWE_ENC,
         "x5t": jwt_priv_key.thumbprint(hashes.SHA256()),
     }
 

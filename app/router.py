@@ -95,7 +95,7 @@ def enforce_cert_newlines(cert_data: str) -> str:
     )
 
 
-@router.get("/login/uzi/{exchange_token}")
+@router.get("/login/uzi/{exchange_token}", response_model=None)
 async def uzi_login(
     exchange_token: str,
     state: str,
@@ -127,7 +127,7 @@ async def oidc_login(
     return session_service.login_oidc(exchange_token, state, redirect_url)
 
 
-@router.get("/login/oidc/callback")
+@router.get("/login/oidc/callback", response_model=None)
 async def callback_login(
     state: str,
     code: str,

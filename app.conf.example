@@ -2,6 +2,10 @@
 base_url = http://localhost:8001
 redirect_url = https://localhost:8006/continue
 mock_enabled = False
+jwt_priv_key_path = secrets/nl-uzi-login-controller.key
+jwt_pub_key_path = secrets/nl-uzi-login-controller.pub
+jwt_crt_path = secrets/nl-uzi-login-controller.crt
+http_timeout = 30
 
 [session]
 jwt_issuer=nl-rdo-max-private
@@ -13,7 +17,7 @@ jwt_audience=nl-uzi-login-controller
 host = localhost
 port = 6379
 namespace = nl-uzi-login-controller
-expire = 60
+expire = 300
 ssl = False
 key =
 cert =
@@ -46,3 +50,13 @@ use_ssl = False
 base_dir = secrets/ssl
 cert_file = server.crt
 key_file = server.key
+
+[oidc_provider]
+authorize_endpoint = http://localhost:8003/authorize
+token_endpoint = http://localhost:8003/token
+userinfo_endpoint = http://localhost:8003/userinfo
+client_id = 1234567890
+redirect_uri = http://localhost:8001/login/oidc/callback
+scopes = openid uzi
+client_secret = secret
+jwt_pub_key_path = secrets/nl-rdo-uzipoc-oidc-provider.pub

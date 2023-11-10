@@ -47,3 +47,10 @@ fi
 if [[ ! -f $SECRETS_DIR/nl-rdo-max-private.crt ]]; then
   create_key_pair $SECRETS_DIR "nl-rdo-max-private" "nl-rdo-max-private"
 fi
+
+###
+# nl-rdo-max-private mock cert
+###
+if [[ ! -f $SECRETS_DIR/nl-uzi-login-controller.crt ]]; then
+  create_key_pair $SECRETS_DIR "nl-uzi-login-controller" "nl-uzi-login-controller"
+fi

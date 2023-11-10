@@ -1,5 +1,8 @@
 import textwrap
+from typing import Union
+
 from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi.responses import JSONResponse, Response, RedirectResponse
 
 from uzireader.uzipassuser import UziPassUser  # type: ignore
 from app.dependencies import session_service_, redirect_url_
@@ -13,7 +16,7 @@ router = APIRouter()
 async def session(
     request: Request,
     session_service: SessionService = Depends(lambda: session_service_),
-):
+) -> JSONResponse:
     """
     Create a new IRMA session
     """
@@ -27,7 +30,7 @@ async def session(
 async def session_status(
     exchange_token: str,
     session_service: SessionService = Depends(lambda: session_service_),
-):
+) -> JSONResponse:
     """
     Get the status of a session
     """
@@ -41,7 +44,7 @@ async def session_status(
 def irma_session(
     exchange_token: str,
     session_service: SessionService = Depends(lambda: session_service_),
-):
+) -> JSONResponse:
     """
     Get the IRMA response from a session
     """
@@ -55,7 +58,7 @@ def irma_session(
 def result(
     exchange_token: str,
     session_service: SessionService = Depends(lambda: session_service_),
-):
+) -> Response:
     """
     Fetch the session result
     """
@@ -72,14 +75,14 @@ def page(
     request: Request,
     redirect_url: str = Depends(lambda: redirect_url_),
     session_service: SessionService = Depends(lambda: session_service_),
-):
+) -> Response:
     """
     Fetch the login page
     """
     return session_service.login_irma(exchange_token, state, request, redirect_url)
 
 
-def enforce_cert_newlines(cert_data):
+def enforce_cert_newlines(cert_data: str) -> str:
     cert_data = (
         cert_data.split("-----BEGIN CERTIFICATE-----")[-1]
         .split("-----END CERTIFICATE-----")[0]
@@ -92,14 +95,14 @@ def enforce_cert_newlines(cert_data):
     )
 
 
-@router.get("/login/uzi/{exchange_token}")
+@router.get("/login/uzi/{exchange_token}", response_model=None)
 async def uzi_login(
     exchange_token: str,
     state: str,
     request: Request,
     redirect_url: str = Depends(lambda: redirect_url_),
     session_service: SessionService = Depends(lambda: session_service_),
-):
+) -> Union[RedirectResponse, HTTPException]:
     """
     Read cert from uzi card and login
     """
@@ -112,3 +115,22 @@ async def uzi_login(
     return session_service.login_uzi(
         exchange_token, state, redirect_url, user["UziNumber"]
     )
+
+
+@router.get("/login/oidc/start/{exchange_token}")
+async def oidc_login(
+    exchange_token: str,
+    state: str,
+    redirect_url: str = Depends(lambda: redirect_url_),
+    session_service: SessionService = Depends(lambda: session_service_),
+) -> RedirectResponse:
+    return session_service.login_oidc(exchange_token, state, redirect_url)
+
+
+@router.get("/login/oidc/callback", response_model=None)
+async def callback_login(
+    state: str,
+    code: str,
+    session_service: SessionService = Depends(lambda: session_service_),
+) -> Union[RedirectResponse, HTTPException]:
+    return session_service.login_oidc_callback(state, code)

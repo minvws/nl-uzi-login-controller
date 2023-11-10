@@ -1,13 +1,11 @@
 import json
 import logging
-import random
-import string
 import time
 from typing import Union
 
 from configparser import ConfigParser
-from fastapi import HTTPException
 from fastapi.responses import JSONResponse
+from fastapi import Request, HTTPException
 from redis import Redis
 from jwcrypto.jwt import JWT
 from jwcrypto.jwk import JWK
@@ -22,7 +20,9 @@ from app.exceptions import (
 )
 from app.models import Session, SessionType, SessionStatus, SessionLoa
 from app.services.irma_service import IrmaService
-
+from app.services.jwt_service import JwtService
+from app.services.oidc_service import OidcService
+from app.utils import rand_pass
 
 REDIS_SESSION_KEY = "session"
 SESSION_NOT_FOUND_ERROR = "session%20not%20found"
@@ -31,14 +31,6 @@ SESSION_NOT_FOUND_ERROR = "session%20not%20found"
 logger = logging.getLogger(__name__)
 config = ConfigParser()
 config.read("app.conf")
-
-
-def rand_pass(size):
-    generate_pass = "".join(
-        [random.choice(string.ascii_lowercase + string.digits) for _ in range(size)]
-    )
-    return generate_pass
-
 
 templates = Jinja2Templates(directory="jinja2")
 
@@ -50,6 +42,8 @@ class SessionService:
         self,
         redis_client: Redis,
         irma_service: IrmaService,
+        oidc_service: OidcService,
+        jwt_service: JwtService,
         irma_disclose_prefix: str,
         redis_namespace: str,
         expires_in_s: int,
@@ -57,12 +51,15 @@ class SessionService:
         jwt_issuer_crt_path: str,
         jwt_audience: str,
         mock_enabled: bool,
+        oidc_provider_pub_key: JWK,
         session_server_events_enabled: bool = False,
         session_server_events_timeout: int = 2000,
         session_polling_interval: int = 1000,
     ):
         self._redis_client = redis_client
         self._irma_service = irma_service
+        self._oidc_service = oidc_service
+        self._jwt_service = jwt_service
         self._irma_disclose_prefix = irma_disclose_prefix
         self._redis_namespace = redis_namespace
         self._expires_in_s = expires_in_s
@@ -71,11 +68,12 @@ class SessionService:
         with open(jwt_issuer_crt_path, encoding="utf-8") as file:
             self._jwt_issuer_crt_path = JWK.from_pem(file.read().encode("utf-8"))
         self._mock_enabled = mock_enabled
+        self._oidc_provider_pub_key = oidc_provider_pub_key
         self._session_server_events_enabled = session_server_events_enabled
         self._session_server_events_timeout = session_server_events_timeout
         self._session_polling_interval = session_polling_interval
 
-    def create(self, raw_jwt: str):
+    def create(self, raw_jwt: str) -> JSONResponse:
         jwt = JWT(
             jwt=raw_jwt,
             key=self._jwt_issuer_crt_path,
@@ -109,14 +107,14 @@ class SessionService:
         )
         return JSONResponse(session.exchange_token)
 
-    def irma(self, exchange_token: str):
+    def irma(self, exchange_token: str) -> JSONResponse:
         session = self._token_to_session(exchange_token)
         if session.irma_disclose_response is None:
             raise IrmaServerException()
         irma_session = json.loads(session.irma_disclose_response)
         return JSONResponse(irma_session["sessionPtr"])
 
-    def status(self, exchange_token):
+    def status(self, exchange_token: str) -> JSONResponse:
         session = self._token_to_session(exchange_token)
         self._poll_status_irma(session)
         return JSONResponse(session.session_status)
@@ -130,7 +128,7 @@ class SessionService:
         session = Session.parse_raw(session_str)
         return session
 
-    def _poll_status_irma(self, session: Session):
+    def _poll_status_irma(self, session: Session) -> None:
         if session.session_status == SessionStatus.DONE:
             return
 
@@ -162,7 +160,7 @@ class SessionService:
                 )
                 session.session_status = SessionStatus.DONE
 
-    def result(self, exchange_token) -> Response:
+    def result(self, exchange_token: str) -> Response:
         if self._mock_enabled and exchange_token == "mocked_exchange_token":
             return JSONResponse(
                 {"uzi_id": "123456789", "loa_authn": SessionLoa.SUBSTANTIAL}
@@ -175,7 +173,9 @@ class SessionService:
             raise GeneralServerException()
         return JSONResponse({"uzi_id": session.uzi_id, "loa_authn": session.loa_authn})
 
-    def login_irma(self, exchange_token, state, request, redirect_url) -> Response:
+    def login_irma(
+        self, exchange_token: str, state: str, request: Request, redirect_url: str
+    ) -> Response:
         session_str: Union[str, None] = self._redis_client.get(
             f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
         )
@@ -201,7 +201,7 @@ class SessionService:
         )
 
     def login_uzi(
-        self, exchange_token, state, redirect_url, uzi_id
+        self, exchange_token: str, state: str, redirect_url: str, uzi_id: str
     ) -> Union[RedirectResponse, HTTPException]:
         session_str: Union[str, None] = self._redis_client.get(
             f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
@@ -217,6 +217,50 @@ class SessionService:
             return HTTPException(status_code=404)
         session.session_status = SessionStatus.DONE
         session.uzi_id = uzi_id
+        session.loa_authn = SessionLoa.HIGH
+
+        self._redis_client.set(
+            f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{session.exchange_token}",
+            session.json(),
+            ex=self._expires_in_s,
+        )
+
+        return RedirectResponse(
+            url=f"{redirect_url}?state={state}&exchange_token={session.exchange_token}",
+            status_code=303,
+        )
+
+    def login_oidc(
+        self, exchange_token: str, state: str, redirect_url: str
+    ) -> RedirectResponse:
+        return self._oidc_service.get_authorize_response(
+            exchange_token, state, redirect_url
+        )
+
+    def login_oidc_callback(
+        self, state: str, code: str
+    ) -> Union[RedirectResponse, HTTPException]:
+        userinfo_jwt, login_state = self._oidc_service.get_userinfo(state, code)
+        claims = self._jwt_service.from_jwt(self._oidc_provider_pub_key, userinfo_jwt)
+        exchange_token = login_state["exchange_token"]
+        redirect_url = login_state["redirect_url"]
+        state = login_state["state"]
+
+        session_str: Union[str, None] = self._redis_client.get(
+            f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
+        )
+        if not session_str:
+            return RedirectResponse(
+                url=f"{redirect_url}?state={state}&error={SESSION_NOT_FOUND_ERROR}",
+                status_code=403,
+            )
+
+        session: Session = Session.parse_raw(session_str)
+        if not session.session_type == SessionType.OIDC:
+            logger.warning("Session type is not OIDC")
+            return HTTPException(status_code=404)
+        session.session_status = SessionStatus.DONE
+        session.uzi_id = claims["signed_uzi_number"]
         session.loa_authn = SessionLoa.HIGH
 
         self._redis_client.set(

@@ -10,6 +10,7 @@ requirements = [
     "jwcrypto",
     "setuptools",
     "asn1crypto",
+    "pycryptodomex",
     "pUzi @ git+ssh://git@github.com/minvws/pUzi-python"
 ]
 

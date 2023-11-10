@@ -1,7 +1,9 @@
+from configparser import SectionProxy
+
 from redis import Redis
 
 
-def create_redis_client(redis_settings) -> Redis:
+def create_redis_client(redis_settings: SectionProxy) -> Redis:
     """
     Global function to retrieve the connection with the redis-server.
 
@@ -20,12 +22,12 @@ def create_redis_client(redis_settings) -> Redis:
     if use_ssl:
         return Redis(
             host=redis_settings["host"],
-            port=redis_settings["port"],
+            port=int(redis_settings["port"]),
             db=0,
-            ssl=redis_settings["ssl"],
+            ssl=redis_settings["ssl"] == "True",
             ssl_keyfile=redis_settings["key"],
             ssl_certfile=redis_settings["cert"],
             ssl_ca_certs=redis_settings["cafile"],
         )
 
-    return Redis(host=redis_settings["host"], port=redis_settings["port"], db=0)
+    return Redis(host=redis_settings["host"], port=int(redis_settings["port"]), db=0)

@@ -97,6 +97,8 @@ puzi @ git+ssh://git@github.com/minvws/pUzi-python
     # via app (setup.py)
 pycparser==2.21
     # via cffi
+pycryptodomex==3.19.0
+    # via app (setup.py)
 pydantic==1.10.5
     # via fastapi
 pyflakes==3.0.1

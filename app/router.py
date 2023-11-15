@@ -11,6 +11,7 @@ from app.services.session_service import SessionService
 
 import json
 import requests
+from app.utils import read_json, write_json
 
 router = APIRouter()
 
@@ -140,18 +141,14 @@ async def callback_login(
 
 @router.get("/test")
 async def test():
-    # data = requests.get("http://localhost:8003/.well-known/openid-configuration").json()
-    # return JSONResponse(data)
-    with open("providers.json", "r") as file:
-        data = json.load(file)
+    data = read_json("providers.json")
 
     global_config = {}
     for provider in data:
         response = requests.get(provider["well-known-url"]).json()
         global_config[provider["name"]] = response
 
-    with open("providers.config.json", "w") as config_file:
-        print("creating well-known-config json file")
-        json.dump(global_config, config_file, indent=4)
+    write_json("providers.config.json", global_config, 4)
+
     return JSONResponse(global_config)
 

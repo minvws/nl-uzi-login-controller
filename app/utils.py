@@ -7,6 +7,10 @@ from Cryptodome.Hash import SHA256
 
 from jwcrypto.jwk import JWK
 
+import json
+
+from typing import Any, Union
+
 
 def rand_pass(size: int) -> str:
     return secrets.token_urlsafe(size)
@@ -40,3 +44,11 @@ def kid_from_certificate(certificate: str) -> str:
     sha = SHA256.new()
     sha.update(der[0])
     return base64.b64encode(sha.digest()).decode("utf-8")
+
+def read_json(file_path: str) -> Any:
+    with open(file_path, "r") as file:
+       return json.load(file)
+    
+def write_json(file_name: str, data: Any, indent: Union[int, str, None] = None) -> None:
+    with open(file_name, "w") as file:
+        json.dump(data, file, indent=indent)

@@ -37,16 +37,12 @@ irma_service = IrmaService(
 
 oidc_service = OidcService(
     redis_client=_redis_client,
-    # authorize_endpoint=config["oidc_provider"]["authorize_endpoint"],
     authorize_endpoint=example_provider["authorize_endpoint"],
-    # token_endpoint=config["oidc_provider"]["token_endpoint"],
     token_endpoint=example_provider["token_endpoint"],
-    # userinfo_endpoint=config["oidc_provider"]["userinfo_endpoint"],
     userinfo_endpoint=example_provider["userinfo_endpoint"],
     client_id=config["oidc_provider"]["client_id"],
     client_secret=config["oidc_provider"]["client_secret"],
     redirect_uri=config["oidc_provider"]["redirect_uri"],
-    # scopes=config["oidc_provider"]["scopes"].split(),
     scopes=example_provider["scopes_supported"],
     http_timeout=config.getint("app", "http_timeout", fallback=30),
     cache_expire=config.getint("redis", "expire", fallback=60),

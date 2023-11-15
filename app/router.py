@@ -9,8 +9,6 @@ from app.dependencies import session_service_, redirect_url_
 from app.exceptions import IrmaSessionExpired
 from app.services.session_service import SessionService
 
-from app.utils import read_json, write_json
-
 router = APIRouter()
 
 

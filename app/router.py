@@ -9,8 +9,6 @@ from app.dependencies import session_service_, redirect_url_
 from app.exceptions import IrmaSessionExpired
 from app.services.session_service import SessionService
 
-import json
-import requests
 from app.utils import read_json, write_json
 
 router = APIRouter()
@@ -138,17 +136,3 @@ async def callback_login(
     session_service: SessionService = Depends(lambda: session_service_),
 ) -> Union[RedirectResponse, HTTPException]:
     return session_service.login_oidc_callback(state, code)
-
-@router.get("/test")
-async def test():
-    data = read_json("providers.json")
-
-    global_config = {}
-    for provider in data:
-        response = requests.get(provider["well-known-url"]).json()
-        global_config[provider["name"]] = response
-
-    write_json("providers.config.json", global_config, 4)
-
-    return JSONResponse(global_config)
-

@@ -8,8 +8,9 @@ from Cryptodome.Hash import SHA256
 from jwcrypto.jwk import JWK
 
 import json
+from typing import Any, Union, Dict
+import requests
 
-from typing import Any, Union
 
 
 def rand_pass(size: int) -> str:
@@ -46,9 +47,25 @@ def kid_from_certificate(certificate: str) -> str:
     return base64.b64encode(sha.digest()).decode("utf-8")
 
 def read_json(file_path: str) -> Any:
+    # TODO: FS add error handling
     with open(file_path, "r") as file:
        return json.load(file)
     
 def write_json(file_name: str, data: Any, indent: Union[int, str, None] = None) -> None:
+    # TODO: FS add error handling
     with open(file_name, "w") as file:
         json.dump(data, file, indent=indent)
+
+
+def load_oidc_well_known_config() -> Dict[str, dict]:
+    # TODO: FS add error handling
+    providers = read_json("providers.json")
+
+    global_config = {}
+    for provider in providers:
+        print(f'Getting data from {provider["name"]}')
+        response = requests.get(provider["well-known-url"]).json()
+        global_config[provider["name"]] = response
+
+    write_json("providers.config.json", global_config, 4)
+    return read_json("providers.config.json")

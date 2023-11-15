@@ -1,15 +1,5 @@
 [
     {
-        "name": "google",
-        "well-known-url": "https://accounts.google.com/.well-known/openid-configuration",
-        "logo": "static/logos/"
-    },
-    {
-        "name": "microsoft",
-        "well-known-url": "https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration",
-        "logo": "static/logos/"   
-    },
-    {
         "name": "example",
         "well-known-url": "http://localhost:8003/.well-known/openid-configuration",
         "logo": "static/logos/"   

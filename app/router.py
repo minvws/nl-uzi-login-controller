@@ -9,6 +9,9 @@ from app.dependencies import session_service_, redirect_url_
 from app.exceptions import IrmaSessionExpired
 from app.services.session_service import SessionService
 
+import json
+import requests
+
 router = APIRouter()
 
 
@@ -134,3 +137,21 @@ async def callback_login(
     session_service: SessionService = Depends(lambda: session_service_),
 ) -> Union[RedirectResponse, HTTPException]:
     return session_service.login_oidc_callback(state, code)
+
+@router.get("/test")
+async def test():
+    # data = requests.get("http://localhost:8003/.well-known/openid-configuration").json()
+    # return JSONResponse(data)
+    with open("providers.json", "r") as file:
+        data = json.load(file)
+
+    global_config = {}
+    for provider in data:
+        response = requests.get(provider["well-known-url"]).json()
+        global_config[provider["name"]] = response
+
+    with open("providers.config.json", "w") as config_file:
+        print("creating well-known-config json file")
+        json.dump(global_config, config_file, indent=4)
+    return JSONResponse(global_config)
+

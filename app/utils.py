@@ -5,6 +5,7 @@ from typing import Union, Any, Dict
 import json
 from Cryptodome.IO import PEM
 from Cryptodome.Hash import SHA256
+import os
 
 from jwcrypto.jwk import JWK
 
@@ -46,7 +47,9 @@ def kid_from_certificate(certificate: str) -> str:
 
 
 def read_json(file_path: str) -> Any:
-    # TODO: FS add error handling
+    if not os.path.exists(file_path):
+        raise FileNotFoundError("File {file_path} does not exist")
+
     with open(file_path, "r", encoding="utf-8") as file:
         return json.load(file)
 
@@ -61,11 +64,10 @@ def load_oidc_well_known_config() -> Dict[str, dict]:
     # TODO: FS add error handling
     providers = read_json("oidc-providers-list.json")
 
-    global_config = {}
+    well_known_configs = {}
     for provider in providers:
-        print(f'Getting data from {provider["name"]}')
         response = requests.get(provider["well-known-url"], timeout=30).json()
-        global_config[provider["name"]] = response
+        well_known_configs[provider["name"]] = response
 
-    write_json("oidc-providers.well-known-config.json", global_config, 4)
+    write_json("oidc-providers.well-known-config.json", well_known_configs, 4)
     return read_json("oidc-providers.well-known-config.json")

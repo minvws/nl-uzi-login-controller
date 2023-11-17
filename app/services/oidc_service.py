@@ -3,7 +3,9 @@ import hashlib
 import json
 import secrets
 from urllib.parse import urlencode
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Dict
+
+from app.discovery.oidc_discovery import OIDCDiscovery
 
 import requests
 from fastapi.exceptions import RequestValidationError
@@ -19,6 +21,7 @@ class OidcService:
     def __init__(
         self,
         redis_client: Redis,
+        oidc_config: Dict[str, OIDCDiscovery],
         authorize_endpoint: str,  # TODO GB: Use wellkown endpoint
         token_endpoint: str,
         userinfo_endpoint: str,
@@ -39,6 +42,7 @@ class OidcService:
         self._scopes = scopes
         self._http_timeout = http_timeout
         self._cache_expire = cache_expire
+        self._oidc_config = oidc_config
 
     def get_authorize_response(
         self,
@@ -112,3 +116,6 @@ class OidcService:
             raise RequestValidationError("Unsupported media type")
         # TODO GB: move redis cache to session_service
         return resp.text, login_state
+    
+    def get_all_well_known_config(self) -> Dict[str, OIDCDiscovery]:
+        return self._oidc_config

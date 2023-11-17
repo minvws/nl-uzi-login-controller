@@ -5,9 +5,10 @@ from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import JSONResponse, Response, RedirectResponse
 
 from uzireader.uzipassuser import UziPassUser  # type: ignore
-from app.dependencies import session_service_, redirect_url_
+from app.dependencies import session_service_, redirect_url_, oidc_service
 from app.exceptions import IrmaSessionExpired
 from app.services.session_service import SessionService
+from app.services.oidc_service import OidcService
 
 router = APIRouter()
 
@@ -134,3 +135,8 @@ async def callback_login(
     session_service: SessionService = Depends(lambda: session_service_),
 ) -> Union[RedirectResponse, HTTPException]:
     return session_service.login_oidc_callback(state, code)
+
+
+@router.get("/test")
+async def get_all_well_known_config(oidc_service: OidcService = Depends(lambda: oidc_service)):
+    return oidc_service.get_all_well_known_config()

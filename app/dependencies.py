@@ -42,6 +42,7 @@ irma_service = IrmaService(
 
 oidc_service = OidcService(
     redis_client=_redis_client,
+    oidc_config=providers,
     authorize_endpoint=example_provider["authorize_endpoint"],
     token_endpoint=example_provider["token_endpoint"],
     userinfo_endpoint=example_provider["userinfo_endpoint"],

@@ -3,9 +3,9 @@ import secrets
 from os import path
 from typing import Union, Any, Dict
 import json
+import os
 from Cryptodome.IO import PEM
 from Cryptodome.Hash import SHA256
-import os
 
 from jwcrypto.jwk import JWK
 
@@ -61,7 +61,7 @@ def write_json(file_name: str, data: Any, indent: Union[int, str, None] = None) 
 
 
 def load_oidc_well_known_config() -> Dict[str, dict]:
-    # TODO: FS add error handling
+    # TODO: FS add error handling and move file name to app.config
     providers = read_json("oidc-providers-list.json")
 
     well_known_configs = {}
@@ -69,5 +69,4 @@ def load_oidc_well_known_config() -> Dict[str, dict]:
         response = requests.get(provider["well-known-url"], timeout=30).json()
         well_known_configs[provider["name"]] = response
 
-    write_json("oidc-providers.well-known-config.json", well_known_configs, 4)
-    return read_json("oidc-providers.well-known-config.json")
+    return well_known_configs

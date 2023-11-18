@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import TypedDict, Union, Dict, Any, Optional, List
+from typing import Union, Dict, Any, Optional, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, validate_arguments
 
 
 class SessionLoa(str, Enum):
@@ -34,7 +34,10 @@ class Session(BaseModel):
 
 
 # TODO: FS redefine this class properly, investigate pyop and oic class
-class OIDCProviderConfiguration(TypedDict):
+@validate_arguments
+class OIDCProviderConfiguration(BaseModel):
+    # model_config = ConfigDict(extra="ignore")
+
     issuer: str
     authorize_endpoint: str
     token_endpoint: str

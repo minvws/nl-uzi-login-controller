@@ -11,6 +11,8 @@ from jwcrypto.jwk import JWK
 
 import requests
 
+from app.models import OIDCProviderConfiguration
+
 
 def rand_pass(size: int) -> str:
     return secrets.token_urlsafe(size)
@@ -60,7 +62,7 @@ def write_json(file_name: str, data: Any, indent: Union[int, str, None] = None) 
         json.dump(data, file, indent=indent)
 
 
-def load_oidc_well_known_config() -> Dict[str, dict]:
+def load_oidc_well_known_config() -> Dict[str, OIDCProviderConfiguration]:
     # TODO: FS add error handling and move file name to app.config
     providers = read_json("oidc-providers-list.json")
 

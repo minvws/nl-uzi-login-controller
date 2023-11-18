@@ -34,7 +34,7 @@ class Session(BaseModel):
 
 
 # TODO: FS redefine this class properly, investigate pyop and oic class
-class OIDCDiscovery(TypedDict):
+class OIDCProviderConfiguration(TypedDict):
     issuer: str
     authorize_endpoint: str
     token_endpoint: str

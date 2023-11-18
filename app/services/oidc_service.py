@@ -3,16 +3,14 @@ import hashlib
 import json
 import secrets
 from urllib.parse import urlencode
-from typing import List, Union, Tuple, Dict
-
-from app.models import OIDCDiscovery
+from typing import Union, Tuple, Dict
 
 import requests
 from fastapi.exceptions import RequestValidationError
 from redis import Redis
 from starlette.responses import RedirectResponse
-
 from app.exceptions import InvalidStateException
+from app.models import OIDCProviderConfiguration
 from app.utils import rand_pass, nonce
 
 
@@ -21,28 +19,20 @@ class OidcService:
     def __init__(
         self,
         redis_client: Redis,
-        oidc_config: Dict[str, OIDCDiscovery],
-        authorize_endpoint: str,  # TODO GB: Use wellkown endpoint
-        token_endpoint: str,
-        userinfo_endpoint: str,
+        oidc_providers_config: Dict[str, OIDCProviderConfiguration],
         client_id: str,
         client_secret: str,
         redirect_uri: str,
-        scopes: List[str],
         http_timeout: int,
         cache_expire: int,
     ):
         self._redis_client = redis_client
-        # self._authorize_endpoint = authorize_endpoint
-        # self._token_endpoint = token_endpoint
-        # self._userinfo_endpoint = userinfo_endpoint
         self._client_id = client_id
         self._client_secret = client_secret
         self._redirect_uri = redirect_uri
-        self._scopes = scopes
         self._http_timeout = http_timeout
         self._cache_expire = cache_expire
-        self._oidc_config = oidc_config
+        self.oidc_providers_config = oidc_providers_config
 
     def get_authorize_response(
         self,
@@ -68,17 +58,18 @@ class OidcService:
         self._redis_client.set(redis_key, json.dumps(login_state))
         self._redis_client.expire(redis_key, self._cache_expire)
 
+        provider = self.oidc_providers_config[oidc_provider_name]
+
         params = {
             "client_id": self._client_id,
             "response_type": "code",
-            "scope": " ".join(self._scopes),
+            "scope": " ".join(provider["scopes_supported"]),
             "redirect_uri": self._redirect_uri,
             "state": oidc_state,
             "nonce": nonce(50),
             "code_challenge_method": "S256",
             "code_challenge": code_challenge,
         }
-        provider = self._oidc_config[oidc_provider_name]
         authorize_endpoint = provider["authorize_endpoint"]
         url = authorize_endpoint + "?" + urlencode(params)
         return RedirectResponse(
@@ -99,7 +90,7 @@ class OidcService:
             raise InvalidStateException()
 
         # TODO GB: error handling
-        oidc_provider = self._oidc_config[oidc_provider_name]
+        oidc_provider = self.oidc_providers_config[oidc_provider_name]
         token_endpoint = oidc_provider["token_endpoint"]
         userinfo_endpoint = oidc_provider["userinfo_endpoint"]
 

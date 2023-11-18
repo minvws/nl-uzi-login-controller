@@ -26,8 +26,8 @@ jwt_crt_content = file_content_raise_if_none(config.get("app", "jwt_crt_path"))
 _redis_client = create_redis_client(config["redis"])
 
 # fetch and load providers
-providers = load_oidc_well_known_config()
-example_provider = providers["example"]
+providers_config = load_oidc_well_known_config()
+example_provider = providers_config["example"]
 
 jwt_service = JwtService(
     jwt_priv_key=jwt_priv_key, crt_kid=kid_from_certificate(jwt_crt_content)
@@ -42,14 +42,14 @@ irma_service = IrmaService(
 
 oidc_service = OidcService(
     redis_client=_redis_client,
-    oidc_config=providers,
-    authorize_endpoint=example_provider["authorize_endpoint"],  # to be removed
-    token_endpoint=example_provider["token_endpoint"], # to be removed
-    userinfo_endpoint=example_provider["userinfo_endpoint"], # to be removed
-    client_id=config["oidc_provider"]["client_id"], # Check client id
+    oidc_providers_config=providers_config,
+    # authorize_endpoint=example_provider["authorize_endpoint"],  # to be removed from app.config
+    # token_endpoint=example_provider["token_endpoint"],  # to be removed from app.config
+    # userinfo_endpoint=example_provider["userinfo_endpoint"],  # to be removed from app.config
+    client_id=config["oidc_provider"]["client_id"],  # Check client id
     client_secret=config["oidc_provider"]["client_secret"],
     redirect_uri=config["oidc_provider"]["redirect_uri"],
-    scopes=example_provider["scopes_supported"],
+    # scopes=example_provider["scopes_supported"], # to be removed from app.config (Double check with GB)
     http_timeout=config.getint("app", "http_timeout", fallback=30),
     cache_expire=config.getint("redis", "expire", fallback=60),
 )

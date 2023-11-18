@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Union, Dict, Any, Optional
+from typing import TypedDict, Union, Dict, Any, Optional, List
 
 from pydantic import BaseModel
 
@@ -31,3 +31,14 @@ class Session(BaseModel):
     irma_session_result: Union[Dict[str, Any], None]
     uzi_id: Union[str, None]
     loa_authn: Optional[SessionLoa]
+
+
+# TODO: FS redefine this class properly, investigate pyop and oic class
+class OIDCDiscovery(TypedDict):
+    issuer: str
+    authorize_endpoint: str
+    token_endpoint: str
+    userinfo_endpoint: str
+    jwks_uri: str
+    scopes_supported: List[str]
+    token_endpoint_auth_methods_supported: Optional[List[str]]

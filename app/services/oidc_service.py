@@ -5,7 +5,7 @@ import secrets
 from urllib.parse import urlencode
 from typing import List, Union, Tuple, Dict
 
-from app.discovery.oidc_discovery import OIDCDiscovery
+from app.models import OIDCDiscovery
 
 import requests
 from fastapi.exceptions import RequestValidationError
@@ -33,9 +33,9 @@ class OidcService:
         cache_expire: int,
     ):
         self._redis_client = redis_client
-        self._authorize_endpoint = authorize_endpoint
-        self._token_endpoint = token_endpoint
-        self._userinfo_endpoint = userinfo_endpoint
+        # self._authorize_endpoint = authorize_endpoint
+        # self._token_endpoint = token_endpoint
+        # self._userinfo_endpoint = userinfo_endpoint
         self._client_id = client_id
         self._client_secret = client_secret
         self._redirect_uri = redirect_uri
@@ -46,6 +46,7 @@ class OidcService:
 
     def get_authorize_response(
         self,
+        oidc_provider_name: str,
         exchange_token: str,
         state: str,
         redirect_url: str,
@@ -77,13 +78,17 @@ class OidcService:
             "code_challenge_method": "S256",
             "code_challenge": code_challenge,
         }
-        url = self._authorize_endpoint + "?" + urlencode(params)
+        provider = self._oidc_config[oidc_provider_name]
+        authorize_endpoint = provider["authorize_endpoint"]
+        url = authorize_endpoint + "?" + urlencode(params)
         return RedirectResponse(
             url=url,
             status_code=303,
         )
 
-    def get_userinfo(self, state: str, code: str) -> Tuple[str, dict]:
+    def get_userinfo(
+        self, oidc_provider_name: str, state: str, code: str
+    ) -> Tuple[str, dict]:
         login_state_from_redis: Union[str, None] = self._redis_client.get(
             "oidc_state_" + state
         )
@@ -94,8 +99,12 @@ class OidcService:
             raise InvalidStateException()
 
         # TODO GB: error handling
+        oidc_provider = self._oidc_config[oidc_provider_name]
+        token_endpoint = oidc_provider["token_endpoint"]
+        userinfo_endpoint = oidc_provider["userinfo_endpoint"]
+
         resp = requests.post(
-            self._token_endpoint,
+            token_endpoint,
             timeout=self._http_timeout,
             data={
                 "code": code,
@@ -108,7 +117,7 @@ class OidcService:
         )
 
         resp = requests.get(
-            self._userinfo_endpoint,
+            userinfo_endpoint,
             timeout=self._http_timeout,
             headers={"Authorization": "Bearer " + resp.json()["access_token"]},
         )
@@ -116,6 +125,3 @@ class OidcService:
             raise RequestValidationError("Unsupported media type")
         # TODO GB: move redis cache to session_service
         return resp.text, login_state
-    
-    def get_all_well_known_config(self) -> Dict[str, OIDCDiscovery]:
-        return self._oidc_config

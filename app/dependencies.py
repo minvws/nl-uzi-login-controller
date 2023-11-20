@@ -43,13 +43,9 @@ irma_service = IrmaService(
 oidc_service = OidcService(
     redis_client=_redis_client,
     oidc_providers_config=providers_config,
-    # authorize_endpoint=example_provider["authorize_endpoint"],  # to be removed from app.config
-    # token_endpoint=example_provider["token_endpoint"],  # to be removed from app.config
-    # userinfo_endpoint=example_provider["userinfo_endpoint"],  # to be removed from app.config
     client_id=config["oidc_provider"]["client_id"],  # Check client id
     client_secret=config["oidc_provider"]["client_secret"],
     redirect_uri=config["oidc_provider"]["redirect_uri"],
-    # scopes=example_provider["scopes_supported"], # to be removed from app.config (Double check with GB)
     http_timeout=config.getint("app", "http_timeout", fallback=30),
     cache_expire=config.getint("redis", "expire", fallback=60),
 )

@@ -63,15 +63,14 @@ class OidcService:
         params = {
             "client_id": self._client_id,
             "response_type": "code",
-            "scope": " ".join(provider["scopes_supported"]),
+            "scope": " ".join(provider.scopes_supported),
             "redirect_uri": self._redirect_uri,
             "state": oidc_state,
             "nonce": nonce(50),
             "code_challenge_method": "S256",
             "code_challenge": code_challenge,
         }
-        authorize_endpoint = provider["authorize_endpoint"]
-        url = authorize_endpoint + "?" + urlencode(params)
+        url = provider.authorize_endpoint + "?" + urlencode(params)
         return RedirectResponse(
             url=url,
             status_code=303,
@@ -91,11 +90,9 @@ class OidcService:
 
         # TODO GB: error handling
         oidc_provider = self.oidc_providers_config[oidc_provider_name]
-        token_endpoint = oidc_provider["token_endpoint"]
-        userinfo_endpoint = oidc_provider["userinfo_endpoint"]
 
         resp = requests.post(
-            token_endpoint,
+            oidc_provider.token_endpoint,
             timeout=self._http_timeout,
             data={
                 "code": code,
@@ -108,7 +105,7 @@ class OidcService:
         )
 
         resp = requests.get(
-            userinfo_endpoint,
+            oidc_provider.userinfo_endpoint,
             timeout=self._http_timeout,
             headers={"Authorization": "Bearer " + resp.json()["access_token"]},
         )

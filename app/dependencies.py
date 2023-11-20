@@ -42,7 +42,7 @@ irma_service = IrmaService(
 
 oidc_service = OidcService(
     redis_client=_redis_client,
-    oidc_providers_config=providers_config,
+    oidc_providers_well_known_config=providers_config,
     client_id=config["oidc_provider"]["client_id"],  # Check client id
     client_secret=config["oidc_provider"]["client_secret"],
     redirect_uri=config["oidc_provider"]["redirect_uri"],

@@ -19,7 +19,7 @@ class OidcService:
     def __init__(
         self,
         redis_client: Redis,
-        oidc_providers_config: Dict[str, OIDCProviderConfiguration],
+        oidc_providers_well_known_config: Dict[str, OIDCProviderConfiguration],
         client_id: str,
         client_secret: str,
         redirect_uri: str,
@@ -32,7 +32,7 @@ class OidcService:
         self._redirect_uri = redirect_uri
         self._http_timeout = http_timeout
         self._cache_expire = cache_expire
-        self.oidc_providers_config = oidc_providers_config
+        self.oidc_providers_config = oidc_providers_well_known_config
 
     def get_authorize_response(
         self,

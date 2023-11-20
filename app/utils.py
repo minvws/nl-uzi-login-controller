@@ -52,14 +52,13 @@ def read_json(file_path: str) -> Any:
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"File {file_path} does not exist")
 
-    try:
-        with open(file_path, "r", encoding="utf-8") as file:
-            return json.load(file)
-    except json.JSONDecodeError as e:
-        print(f"Error has occured in reading {file_path}:", e)
+    with open(file_path, "r", encoding="utf-8") as file:
+        return json.load(file)
 
 
-def load_oidc_well_known_config(providers_config_path: str) -> Dict[str, OIDCProviderConfiguration]:
+def load_oidc_well_known_config(
+    providers_config_path: str,
+) -> Dict[str, OIDCProviderConfiguration]:
     if not os.path.exists(providers_config_path):
         raise FileNotFoundError(f"File {providers_config_path} does not exist")
 

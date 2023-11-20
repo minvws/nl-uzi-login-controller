@@ -50,21 +50,22 @@ def kid_from_certificate(certificate: str) -> str:
 
 def read_json(file_path: str) -> Any:
     if not os.path.exists(file_path):
-        raise FileNotFoundError("File {file_path} does not exist")
+        raise FileNotFoundError(f"File {file_path} does not exist")
 
-    with open(file_path, "r", encoding="utf-8") as file:
-        return json.load(file)
-
-
-def write_json(file_name: str, data: Any, indent: Union[int, str, None] = None) -> None:
-    # TODO: FS add error handling
-    with open(file_name, "w", encoding="utf-8") as file:
-        json.dump(data, file, indent=indent)
+    try:
+        with open(file_path, "r", encoding="utf-8") as file:
+            return json.load(file)
+    except json.JSONDecodeError as e:
+        print(f"Error has occured in reading {file_path}:", e)
 
 
 def load_oidc_well_known_config(providers_config_path: str) -> Dict[str, OIDCProviderConfiguration]:
-    # TODO: FS add error handling and move file name to app.config
+    if not os.path.exists(providers_config_path):
+        raise FileNotFoundError(f"File {providers_config_path} does not exist")
+
     providers = read_json(providers_config_path)
+    if providers is None:
+        raise TypeError("Error has occurred in reading providers list")
 
     well_known_configs = {}
     for provider in providers:

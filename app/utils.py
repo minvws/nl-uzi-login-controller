@@ -62,9 +62,9 @@ def write_json(file_name: str, data: Any, indent: Union[int, str, None] = None) 
         json.dump(data, file, indent=indent)
 
 
-def load_oidc_well_known_config() -> Dict[str, OIDCProviderConfiguration]:
+def load_oidc_well_known_config(providers_config_path: str) -> Dict[str, OIDCProviderConfiguration]:
     # TODO: FS add error handling and move file name to app.config
-    providers = read_json("oidc-providers-list.json")
+    providers = read_json(providers_config_path)
 
     well_known_configs = {}
     for provider in providers:

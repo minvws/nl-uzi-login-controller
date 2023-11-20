@@ -26,7 +26,8 @@ jwt_crt_content = file_content_raise_if_none(config.get("app", "jwt_crt_path"))
 _redis_client = create_redis_client(config["redis"])
 
 # fetch and load providers
-providers_config = load_oidc_well_known_config()
+providers_conf_path = config.get("oidc_provider", "config_list_path")
+providers_config = load_oidc_well_known_config(providers_conf_path)
 
 jwt_service = JwtService(
     jwt_priv_key=jwt_priv_key, crt_kid=kid_from_certificate(jwt_crt_content)

@@ -51,6 +51,7 @@ cert_file = server.crt
 key_file = server.key
 
 [oidc_provider]
+config_list_path=oidc-providers-list.json
 authorize_endpoint = http://localhost:8003/authorize
 token_endpoint = http://localhost:8003/token
 userinfo_endpoint = http://localhost:8003/userinfo

@@ -1,7 +1,6 @@
 [
     {
         "name": "example",
-        "well-known-url": "http://localhost:8003/.well-known/openid-configuration",
-        "logo": "static/logos/"   
+        "well-known-url": "http://localhost:8003/.well-known/openid-configuration"
     }
 ]

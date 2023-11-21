@@ -68,7 +68,9 @@ def load_oidc_well_known_config(
 
     well_known_configs = {}
     for provider in providers:
-        provider_config_url = "".join([provider["base_url"], "/.well-known/openid-configuration"])
+        provider_config_url = "".join(
+            [provider["base_url"], "/.well-known/openid-configuration"]
+        )
         response = requests.get(provider_config_url, timeout=30).json()
         well_known_configs[provider["name"]] = response
     return well_known_configs

@@ -53,7 +53,6 @@ key_file = server.key
 [oidc_provider]
 # path to OIDC configuration list
 config_list_path=oidc-providers-list.json
-client_id = 1234567890
 redirect_uri = http://localhost:8001/login/oidc/callback
 client_secret = secret
 jwt_pub_key_path = secrets/nl-rdo-uzipoc-oidc-provider.pub

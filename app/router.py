@@ -118,7 +118,8 @@ async def uzi_login(
 
 
 @router.get(
-    "/login/client/{client_id}/oidc/{oidc_provider_name}/start/{exchange_token}/scope/{scope}"
+    "/login/oidc/{oidc_provider_name}/start/{exchange_token}/scope/{scope}"
+    "/login/oidc/{oidc_provider_name}/start/{exchange_token}/scope/{scope}"
 )
 async def oidc_login(
     oidc_provider_name: str,
@@ -134,7 +135,7 @@ async def oidc_login(
 
 
 @router.get(
-    "/login/client/{client_id}/oidc/{oidc_provider_name}/callback", response_model=None
+    "/login/oidc/{oidc_provider_name}/callback", response_model=None
 )
 async def callback_login(
     oidc_provider_name: str,

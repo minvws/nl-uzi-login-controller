@@ -83,14 +83,16 @@ class OidcService:
             status_code=303,
         )
 
-    def _get_oidc_provider_client(self, oidc_provider_name: str, client_id: str) -> dict:
+    def _get_oidc_provider_client(
+        self, oidc_provider_name: str, client_id: str
+    ) -> dict:
         provider_clients = self._clients[oidc_provider_name]
         client = [x for x in provider_clients if x["client_id"] == client_id][0]
 
         return client
 
     def get_userinfo(
-        self, oidc_provider_name: str, state: str, code: str
+        self, oidc_provider_name: str, client_id: str, state: str, code: str
     ) -> Tuple[str, dict]:
         login_state_from_redis: Union[str, None] = self._redis_client.get(
             "oidc_state_" + state
@@ -103,6 +105,7 @@ class OidcService:
 
         # TODO GB: error handling
         oidc_provider = self.oidc_providers_config[oidc_provider_name]
+        client = self._get_oidc_provider_client(oidc_provider_name, client_id)
 
         resp = requests.post(
             oidc_provider.token_endpoint,
@@ -110,7 +113,7 @@ class OidcService:
             data={
                 "code": code,
                 "code_verifier": login_state["code_verifier"],
-                "client_id": self._client_id,
+                "client_id": client["client_id"],
                 "client_secret": self._client_secret,
                 "grant_type": "authorization_code",
                 "redirect_uri": self._redirect_uri,

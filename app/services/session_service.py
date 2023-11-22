@@ -233,20 +233,21 @@ class SessionService:
     def login_oidc(
         self,
         oidc_provider_name: str,
+        client_id: str,
         exchange_token: str,
         state: str,
         scope: str,
         redirect_url: str,
     ) -> RedirectResponse:
         return self._oidc_service.get_authorize_response(
-            oidc_provider_name, exchange_token, state, scope, redirect_url
+            oidc_provider_name, client_id, exchange_token, state, scope, redirect_url
         )
 
     def login_oidc_callback(
-        self, oidc_provider_name: str, state: str, code: str
+        self, oidc_provider_name: str, client_id: str, state: str, code: str
     ) -> Union[RedirectResponse, HTTPException]:
         userinfo_jwt, login_state = self._oidc_service.get_userinfo(
-            oidc_provider_name, state, code
+            oidc_provider_name, client_id, state, code
         )
         claims = self._jwt_service.from_jwt(self._oidc_provider_pub_key, userinfo_jwt)
         exchange_token = login_state["exchange_token"]

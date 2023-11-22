@@ -11,7 +11,7 @@ from app.utils import (
     file_content_raise_if_none,
     kid_from_certificate,
     load_oidc_well_known_config,
-    get_oidc_clients_from_config
+    get_oidc_clients_from_config,
 )
 
 config = ConfigParser()
@@ -48,7 +48,7 @@ oidc_service = OidcService(
     redis_client=_redis_client,
     oidc_providers_well_known_config=providers_well_known_configs,
     # client_id=config["oidc_provider"]["client_id"],  # Check client id
-    clients = oidc_clients,
+    clients=oidc_clients,
     client_secret=config["oidc_provider"]["client_secret"],
     redirect_uri=config["oidc_provider"]["redirect_uri"],
     http_timeout=config.getint("app", "http_timeout", fallback=30),

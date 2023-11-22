@@ -122,7 +122,6 @@ async def uzi_login(
 )
 async def oidc_login(
     oidc_provider_name: str,
-    client_id: str,
     exchange_token: str,
     state: str,
     scope: str,
@@ -130,7 +129,7 @@ async def oidc_login(
     session_service: SessionService = Depends(lambda: session_service_),
 ) -> RedirectResponse:
     return session_service.login_oidc(
-        oidc_provider_name, client_id, exchange_token, state, scope, redirect_url
+        oidc_provider_name, exchange_token, state, scope, redirect_url
     )
 
 
@@ -139,11 +138,8 @@ async def oidc_login(
 )
 async def callback_login(
     oidc_provider_name: str,
-    client_id: str,
     state: str,
     code: str,
     session_service: SessionService = Depends(lambda: session_service_),
 ) -> Union[RedirectResponse, HTTPException]:
-    return session_service.login_oidc_callback(
-        oidc_provider_name, client_id, state, code
-    )
+    return session_service.login_oidc_callback(oidc_provider_name, state, code)

@@ -56,16 +56,6 @@ def read_json(file_path: str) -> Any:
         return json.load(file)
 
 
-def get_oidc_clients_from_config(file_path: str) -> Dict[str, list]:
-    oidc_providers = read_json(file_path)
-    clients = {}
-
-    for provider in oidc_providers:
-        clients[provider["name"]] = provider["clients"]
-
-    return clients
-
-
 def load_oidc_well_known_config(
     providers_config_path: str,
 ) -> Dict[str, OIDCProviderConfiguration]:
@@ -73,6 +63,7 @@ def load_oidc_well_known_config(
         raise FileNotFoundError(f"File {providers_config_path} does not exist")
 
     providers = read_json(providers_config_path)
+
     if providers is None:
         raise TypeError("Error has occurred in reading providers list")
 
@@ -82,5 +73,8 @@ def load_oidc_well_known_config(
             [provider["issuer"], "/.well-known/openid-configuration"]
         )
         response = requests.get(provider_config_url, timeout=30).json()
+
         well_known_configs[provider["name"]] = response
+        well_known_configs[provider["name"]]["client_id"] = provider["client_id"]
+    print(well_known_configs)
     return well_known_configs

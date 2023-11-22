@@ -20,14 +20,14 @@ class OidcService:
         self,
         redis_client: Redis,
         oidc_providers_well_known_config: Dict[str, OIDCProviderConfiguration],
-        clients: Dict[str, list],
+        # client_id: str,
         client_secret: str,
         redirect_uri: str,
         http_timeout: int,
         cache_expire: int,
     ):
         self._redis_client = redis_client
-        self._clients = clients
+        # self._client_id = client_id
         self._client_secret = client_secret
         self._redirect_uri = redirect_uri
         self._http_timeout = http_timeout
@@ -37,7 +37,6 @@ class OidcService:
     def get_authorize_response(
         self,
         oidc_provider_name: str,
-        client_id: str,
         exchange_token: str,
         state: str,
         scope: str,
@@ -60,15 +59,14 @@ class OidcService:
         self._redis_client.set(redis_key, json.dumps(login_state))
         self._redis_client.expire(redis_key, self._cache_expire)
 
-        provider = self.oidc_providers_config[oidc_provider_name]
-        client = self._get_oidc_provider_client(oidc_provider_name, client_id)
+        oidc_provider = self.oidc_providers_config[oidc_provider_name]
 
-        if scope not in provider.scopes_supported:
+        if scope not in oidc_provider.scopes_supported:
             # TODO: FS add HTTP exceptions to the application
             raise GeneralServerException()
 
         params = {
-            "client_id": client["client_id"],
+            "client_id": oidc_provider.client_id,
             "response_type": "code",
             "scope": " ".join(scope),
             "redirect_uri": self._redirect_uri,
@@ -77,22 +75,14 @@ class OidcService:
             "code_challenge_method": "S256",
             "code_challenge": code_challenge,
         }
-        url = provider.authorize_endpoint + "?" + urlencode(params)
+        url = oidc_provider.authorize_endpoint + "?" + urlencode(params)
         return RedirectResponse(
             url=url,
             status_code=303,
         )
 
-    def _get_oidc_provider_client(
-        self, oidc_provider_name: str, client_id: str
-    ) -> dict:
-        provider_clients = self._clients[oidc_provider_name]
-        client = [x for x in provider_clients if x["client_id"] == client_id][0]
-
-        return client
-
     def get_userinfo(
-        self, oidc_provider_name: str, client_id: str, state: str, code: str
+        self, oidc_provider_name: str, state: str, code: str
     ) -> Tuple[str, dict]:
         login_state_from_redis: Union[str, None] = self._redis_client.get(
             "oidc_state_" + state
@@ -105,7 +95,6 @@ class OidcService:
 
         # TODO GB: error handling
         oidc_provider = self.oidc_providers_config[oidc_provider_name]
-        client = self._get_oidc_provider_client(oidc_provider_name, client_id)
 
         resp = requests.post(
             oidc_provider.token_endpoint,
@@ -113,7 +102,7 @@ class OidcService:
             data={
                 "code": code,
                 "code_verifier": login_state["code_verifier"],
-                "client_id": client["client_id"],
+                "client_id": oidc_provider.client_id,
                 "client_secret": self._client_secret,
                 "grant_type": "authorization_code",
                 "redirect_uri": self._redirect_uri,

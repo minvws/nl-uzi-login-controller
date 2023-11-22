@@ -42,3 +42,4 @@ class OIDCProviderConfiguration(BaseModel):
     jwks_uri: str
     scopes_supported: List[str]
     token_endpoint_auth_methods_supported: Optional[List[str]]
+    client_id: str

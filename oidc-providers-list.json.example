@@ -1,6 +1,12 @@
 [
     {
-        "name": "example",
-        "issuer": "http://localhost:8003"
+        "name": "zsm",
+        "issuer": "http://localhost:8003",
+        "clients": [
+            {
+                "client_id": "c512596d-43e0-430a-8926-6e5a53cb9ebc",
+                "client_name": "Proeftuin"
+            }
+        ]
     }
 ]

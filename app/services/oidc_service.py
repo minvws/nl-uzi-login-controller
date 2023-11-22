@@ -20,7 +20,6 @@ class OidcService:
         self,
         redis_client: Redis,
         oidc_providers_well_known_config: Dict[str, OIDCProviderConfiguration],
-        # client_id: str, # TODO: FS to be removed
         clients: Dict[str, list],
         client_secret: str,
         redirect_uri: str,
@@ -28,7 +27,6 @@ class OidcService:
         cache_expire: int,
     ):
         self._redis_client = redis_client
-        # self._client_id = client_id
         self._clients = clients
         self._client_secret = client_secret
         self._redirect_uri = redirect_uri

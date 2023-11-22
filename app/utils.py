@@ -1,7 +1,7 @@
 import base64
 import secrets
 from os import path
-from typing import Union, Any, Dict
+from typing import Union, Any, Dict, List
 import json
 import os
 from Cryptodome.IO import PEM
@@ -56,6 +56,16 @@ def read_json(file_path: str) -> Any:
         return json.load(file)
 
 
+def get_oidc_clients_from_config(file_path: str) -> Dict[str, list]:
+    oidc_providers = read_json(file_path)
+    clients = {}
+
+    for provider in oidc_providers:
+        clients[provider["name"]] = provider["clients"]
+
+    return clients
+
+
 def load_oidc_well_known_config(
     providers_config_path: str,
 ) -> Dict[str, OIDCProviderConfiguration]:
@@ -69,7 +79,7 @@ def load_oidc_well_known_config(
     well_known_configs = {}
     for provider in providers:
         provider_config_url = "".join(
-            [provider["base_url"], "/.well-known/openid-configuration"]
+            [provider["issuer"], "/.well-known/openid-configuration"]
         )
         response = requests.get(provider_config_url, timeout=30).json()
         well_known_configs[provider["name"]] = response

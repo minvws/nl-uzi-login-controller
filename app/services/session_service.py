@@ -235,10 +235,11 @@ class SessionService:
         oidc_provider_name: str,
         exchange_token: str,
         state: str,
+        scope: str,
         redirect_url: str,
     ) -> RedirectResponse:
         return self._oidc_service.get_authorize_response(
-            oidc_provider_name, exchange_token, state, redirect_url
+            oidc_provider_name, exchange_token, state, scope, redirect_url
         )
 
     def login_oidc_callback(

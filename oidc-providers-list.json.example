@@ -1,6 +1,6 @@
 [
     {
         "name": "example",
-        "base_url": "http://localhost:8003"
+        "issuer": "http://localhost:8003"
     }
 ]

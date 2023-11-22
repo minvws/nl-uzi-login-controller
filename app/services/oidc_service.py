@@ -9,7 +9,7 @@ import requests
 from fastapi.exceptions import RequestValidationError
 from redis import Redis
 from starlette.responses import RedirectResponse
-from app.exceptions import InvalidStateException
+from app.exceptions import InvalidStateException, GeneralServerException
 from app.models import OIDCProviderConfiguration
 from app.utils import rand_pass, nonce
 
@@ -20,14 +20,16 @@ class OidcService:
         self,
         redis_client: Redis,
         oidc_providers_well_known_config: Dict[str, OIDCProviderConfiguration],
-        client_id: str,
+        # client_id: str, # TODO: FS to be removed
+        clients: Dict[str, list],
         client_secret: str,
         redirect_uri: str,
         http_timeout: int,
         cache_expire: int,
     ):
         self._redis_client = redis_client
-        self._client_id = client_id
+        # self._client_id = client_id
+        self._clients = clients
         self._client_secret = client_secret
         self._redirect_uri = redirect_uri
         self._http_timeout = http_timeout
@@ -37,8 +39,10 @@ class OidcService:
     def get_authorize_response(
         self,
         oidc_provider_name: str,
+        client_id: str,
         exchange_token: str,
         state: str,
+        scope: str,
         redirect_url: str,
     ) -> RedirectResponse:
         code_verifier = secrets.token_urlsafe(96)[:64]
@@ -59,11 +63,16 @@ class OidcService:
         self._redis_client.expire(redis_key, self._cache_expire)
 
         provider = self.oidc_providers_config[oidc_provider_name]
+        client = self._get_oidc_provider_client(oidc_provider_name, client_id)
+
+        if scope not in provider.scopes_supported:
+            # TODO: FS add HTTP exceptions to the application
+            raise GeneralServerException()
 
         params = {
-            "client_id": self._client_id,
+            "client_id": client["client_id"],
             "response_type": "code",
-            "scope": " ".join(provider.scopes_supported),
+            "scope": " ".join(scope),
             "redirect_uri": self._redirect_uri,
             "state": oidc_state,
             "nonce": nonce(50),
@@ -75,6 +84,12 @@ class OidcService:
             url=url,
             status_code=303,
         )
+
+    def _get_oidc_provider_client(self, oidc_provider_name: str, client_id: str) -> dict:
+        provider_clients = self._clients[oidc_provider_name]
+        client = [x for x in provider_clients if x["client_id"] == client_id][0]
+
+        return client
 
     def get_userinfo(
         self, oidc_provider_name: str, state: str, code: str

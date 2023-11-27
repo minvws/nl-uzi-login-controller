@@ -6,7 +6,7 @@ from typing import Union, Any, Dict
 from configparser import ConfigParser
 from Cryptodome.IO import PEM
 from Cryptodome.Hash import SHA256
-
+from pydantic import ValidationError
 from jwcrypto.jwk import JWK
 
 import requests
@@ -58,7 +58,7 @@ def read_json(file_path: str) -> Any:
     return data
 
 
-def load_oidc_well_known_config(
+def load_oidc_well_known_config(  # type: ignore
     providers_config_path: str,
 ) -> Dict[str, OIDCProviderConfiguration]:
     providers = read_json(providers_config_path)
@@ -69,8 +69,9 @@ def load_oidc_well_known_config(
             [provider["issuer"], "/.well-known/openid-configuration"]
         )
         response = requests.get(provider_config_url, timeout=HTTP_TIMEOUT).json()
+        config_data = {"client_id": provider["client_id"], "discovery": response}
 
-        provider_data = {"client_id": provider["client_id"], "discovery": response}
+        provider_data = OIDCProviderConfiguration(**config_data)
         well_known_configs[provider["name"]] = provider_data
-        # well_known_configs[provider["name"]]["client_id"] = provider["client_id"]
+
     return well_known_configs

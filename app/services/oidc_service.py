@@ -60,10 +60,10 @@ class OidcService:
         self._redis_client.set(redis_key, json.dumps(login_state))
         self._redis_client.expire(redis_key, self._cache_expire)
 
-        oidc_provider = self._oidc_providers_config[oidc_provider_name]["discovery"]
-        client_id = self._oidc_providers_config[oidc_provider_name]["client_id"]
+        oidc_provider = self._oidc_providers_config[oidc_provider_name].discovery
+        client_id = self._oidc_providers_config[oidc_provider_name].client_id
 
-        if scope not in oidc_provider["scopes_supported"]:
+        if scope not in oidc_provider.scopes_supported:
             # TODO: FS add HTTP exceptions to the application
             raise GeneralServerException()
 
@@ -77,7 +77,7 @@ class OidcService:
             "code_challenge_method": "S256",
             "code_challenge": code_challenge,
         }
-        url = oidc_provider["authorization_endpoint"] + "?" + urlencode(params)
+        url = oidc_provider.authorization_endpoint + "?" + urlencode(params)
         return RedirectResponse(
             url=url,
             status_code=303,
@@ -96,8 +96,8 @@ class OidcService:
             raise InvalidStateException()
 
         # TODO GB: error handling
-        oidc_provider = self._oidc_providers_config[oidc_provider_name]["discovery"]
-        client_id = self._oidc_providers_config[oidc_provider_name]["client_id"]
+        oidc_provider = self._oidc_providers_config[oidc_provider_name].discovery
+        client_id = self._oidc_providers_config[oidc_provider_name].client_id
 
         resp = requests.post(
             oidc_provider.token_endpoint,

@@ -23,19 +23,17 @@ class OidcService:
         redis_client: Redis,
         oidc_providers_well_known_config: Dict[str, OIDCProviderConfiguration],
         jwt_service: JwtService,
-        # client_id: str,
         client_secret: str,
         redirect_uri: str,
         http_timeout: int,
         cache_expire: int,
     ):
         self._redis_client = redis_client
-        # self._client_id = client_id
         self._client_secret = client_secret
         self._redirect_uri = redirect_uri
         self._http_timeout = http_timeout
         self._cache_expire = cache_expire
-        self.oidc_providers_config = oidc_providers_well_known_config
+        self._oidc_providers_config = oidc_providers_well_known_config
         self._jwt_service = jwt_service
 
 
@@ -64,14 +62,15 @@ class OidcService:
         self._redis_client.set(redis_key, json.dumps(login_state))
         self._redis_client.expire(redis_key, self._cache_expire)
 
-        oidc_provider = self.oidc_providers_config[oidc_provider_name]
+        oidc_provider = self._oidc_providers_config[oidc_provider_name]["discovery"]
+        client_id = self._oidc_providers_config[oidc_provider_name]["client_id"]
 
         if scope not in oidc_provider["scopes_supported"]:
             # TODO: FS add HTTP exceptions to the application
             raise GeneralServerException()
 
         params = {
-            "client_id": oidc_provider["client_id"],
+            "client_id": client_id,
             "response_type": "code",
             "scope": " ".join(scope),
             "redirect_uri": self._redirect_uri,
@@ -99,7 +98,8 @@ class OidcService:
             raise InvalidStateException()
 
         # TODO GB: error handling
-        oidc_provider = self.oidc_providers_config[oidc_provider_name]
+        oidc_provider = self._oidc_providers_config[oidc_provider_name]["discovery"]
+        client_id = self._oidc_providers_config[oidc_provider_name]["client_id"]
 
         resp = requests.post(
             oidc_provider.token_endpoint,
@@ -107,7 +107,7 @@ class OidcService:
             data={
                 "code": code,
                 "code_verifier": login_state["code_verifier"],
-                "client_id": oidc_provider.client_id,
+                "client_id": client_id,
                 "client_secret": self._client_secret,
                 "grant_type": "authorization_code",
                 "redirect_uri": self._redirect_uri,

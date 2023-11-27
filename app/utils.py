@@ -53,9 +53,11 @@ def kid_from_certificate(certificate: str) -> str:
 
 
 def read_json(file_path: str) -> Any:
-    with open(file_path, "r", encoding="utf-8") as file:
-        return json.load(file)
-    # return file_content_raise_if_none(file_path)
+    data = json.loads(file_content_raise_if_none(file_path))
+    if data is None:
+        raise json.JSONDecodeError(f"Error occured while reading {file_path}")
+
+    return data
 
 
 def load_oidc_well_known_config(
@@ -70,6 +72,10 @@ def load_oidc_well_known_config(
         )
         response = requests.get(provider_config_url, timeout=http_timeout).json()
 
-        well_known_configs[provider["name"]] = response
-        well_known_configs[provider["name"]]["client_id"] = provider["client_id"]
+        provider_data = {
+            "client_id": provider["client_id"],
+            "discovery": response
+        }
+        well_known_configs[provider["name"]] = provider_data
+        # well_known_configs[provider["name"]]["client_id"] = provider["client_id"]
     return well_known_configs

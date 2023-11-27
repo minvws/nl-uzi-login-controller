@@ -34,7 +34,8 @@ class Session(BaseModel):
 
 
 # TODO: FS redefine this class properly, investigate pyop and oic class
-class OIDCProviderConfiguration(BaseModel):
+
+class OIDCProviderDiscoveryBase(BaseModel):
     issuer: str
     authorization_endpoint: str
     token_endpoint: str
@@ -43,3 +44,8 @@ class OIDCProviderConfiguration(BaseModel):
     scopes_supported: List[str]
     token_endpoint_auth_methods_supported: Optional[List[str]]
     client_id: str
+
+
+class OIDCProviderConfiguration(BaseModel):
+    client_id: str
+    discovery: OIDCProviderDiscoveryBase

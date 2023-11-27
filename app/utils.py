@@ -3,6 +3,7 @@ import json
 import secrets
 from os import path
 from typing import Union, Any, Dict
+from configparser import ConfigParser
 from Cryptodome.IO import PEM
 from Cryptodome.Hash import SHA256
 
@@ -11,12 +12,12 @@ from jwcrypto.jwk import JWK
 import requests
 
 from app.models import OIDCProviderConfiguration
-from configparser import ConfigParser
 
 config = ConfigParser()
 config.read("app.conf")
 
-http_timeout = int(config.get("app", "http_timeout"))
+HTTP_TIMEOUT = int(config.get("app", "http_timeout"))
+
 
 def rand_pass(size: int) -> str:
     return secrets.token_urlsafe(size)
@@ -54,9 +55,6 @@ def kid_from_certificate(certificate: str) -> str:
 
 def read_json(file_path: str) -> Any:
     data = json.loads(file_content_raise_if_none(file_path))
-    if data is None:
-        raise json.JSONDecodeError(f"Error occured while reading {file_path}")
-
     return data
 
 
@@ -70,12 +68,9 @@ def load_oidc_well_known_config(
         provider_config_url = "".join(
             [provider["issuer"], "/.well-known/openid-configuration"]
         )
-        response = requests.get(provider_config_url, timeout=http_timeout).json()
+        response = requests.get(provider_config_url, timeout=HTTP_TIMEOUT).json()
 
-        provider_data = {
-            "client_id": provider["client_id"],
-            "discovery": response
-        }
+        provider_data = {"client_id": provider["client_id"], "discovery": response}
         well_known_configs[provider["name"]] = provider_data
         # well_known_configs[provider["name"]]["client_id"] = provider["client_id"]
     return well_known_configs

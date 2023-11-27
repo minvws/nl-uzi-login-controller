@@ -2,7 +2,6 @@
     {
         "name": "zsm",
         "issuer": "http://localhost:8003",
-        "client_id": "c512596d-43e0-430a-8926-6e5a53cb9ebc",
-        "client_name": "Proeftuin"
+        "client_id": "c512596d-43e0-430a-8926-6e5a53cb9ebc"
     }
 ]

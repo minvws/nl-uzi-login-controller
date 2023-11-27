@@ -248,7 +248,7 @@ class SessionService:
         userinfo_jwt, login_state = self._oidc_service.get_userinfo(
             oidc_provider_name, state, code
         )
-        claims = self._jwt_service.from_jwt(self._oidc_provider_pub_key, userinfo_jwt)
+        claims = self._jwt_service.from_jwe(self._oidc_provider_pub_key, userinfo_jwt)
         exchange_token = login_state["exchange_token"]
         redirect_url = login_state["redirect_url"]
         state = login_state["state"]

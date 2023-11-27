@@ -8,11 +8,13 @@ from typing import Union, Tuple, Dict
 import requests
 from fastapi.exceptions import RequestValidationError
 from redis import Redis
-from starlette.responses import RedirectResponse
+from starlette.responses import RedirectResponse, JSONResponse
 from app.exceptions import InvalidStateException, GeneralServerException
 from app.models import OIDCProviderConfiguration
-from app.utils import rand_pass, nonce
+from app.utils import rand_pass, nonce, load_jwk
+from app.services.jwt_service import JwtService
 
+from configparser import ConfigParser
 
 class OidcService:
     # pylint: disable=too-many-arguments
@@ -20,6 +22,7 @@ class OidcService:
         self,
         redis_client: Redis,
         oidc_providers_well_known_config: Dict[str, OIDCProviderConfiguration],
+        jwt_service: JwtService,
         # client_id: str,
         client_secret: str,
         redirect_uri: str,
@@ -33,6 +36,8 @@ class OidcService:
         self._http_timeout = http_timeout
         self._cache_expire = cache_expire
         self.oidc_providers_config = oidc_providers_well_known_config
+        self._jwt_service = jwt_service
+
 
     def get_authorize_response(
         self,
@@ -61,12 +66,12 @@ class OidcService:
 
         oidc_provider = self.oidc_providers_config[oidc_provider_name]
 
-        if scope not in oidc_provider.scopes_supported:
+        if scope not in oidc_provider["scopes_supported"]:
             # TODO: FS add HTTP exceptions to the application
             raise GeneralServerException()
 
         params = {
-            "client_id": oidc_provider.client_id,
+            "client_id": oidc_provider["client_id"],
             "response_type": "code",
             "scope": " ".join(scope),
             "redirect_uri": self._redirect_uri,
@@ -75,7 +80,7 @@ class OidcService:
             "code_challenge_method": "S256",
             "code_challenge": code_challenge,
         }
-        url = oidc_provider.authorize_endpoint + "?" + urlencode(params)
+        url = oidc_provider["authorization_endpoint"] + "?" + urlencode(params)
         return RedirectResponse(
             url=url,
             status_code=303,
@@ -118,3 +123,21 @@ class OidcService:
             raise RequestValidationError("Unsupported media type")
         # TODO GB: move redis cache to session_service
         return resp.text, login_state
+
+
+    def test_jwe(self):
+        config = ConfigParser()
+        config.read("app.conf")
+
+        oidc_jwt_key_path = config.get("oidc_provider", "jwt_pub_key_path")
+        jwk = load_jwk(oidc_jwt_key_path)
+
+        response = requests.get("http://localhost:8003/test", timeout=30)
+        data = response.json()
+
+        decrypted_data = self._jwt_service.from_jwe(jwk, data)
+
+
+        return JSONResponse(
+            decrypted_data
+        )

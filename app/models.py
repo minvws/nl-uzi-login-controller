@@ -36,7 +36,7 @@ class Session(BaseModel):
 # TODO: FS redefine this class properly, investigate pyop and oic class
 class OIDCProviderConfiguration(BaseModel):
     issuer: str
-    authorize_endpoint: str
+    authorization_endpoint: str
     token_endpoint: str
     userinfo_endpoint: str
     jwks_uri: str

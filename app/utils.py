@@ -6,7 +6,6 @@ from typing import Union, Any, Dict
 from configparser import ConfigParser
 from Cryptodome.IO import PEM
 from Cryptodome.Hash import SHA256
-from pydantic import ValidationError
 from jwcrypto.jwk import JWK
 
 import requests

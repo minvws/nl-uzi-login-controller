@@ -70,7 +70,11 @@ def load_oidc_well_known_config(
         response = requests.get(
             provider_config_url, timeout=HTTP_TIMEOUT, verify=False
         ).json()
-        config_data = {"client_id": provider["client_id"], "discovery": response}
+        config_data = {
+            "client_id": provider["client_id"],
+            "client_scopes": provider["scopes"],
+            "discovery": response,
+        }
 
         provider_data = OIDCProviderConfiguration(**config_data)
         well_known_configs[provider["name"]] = provider_data

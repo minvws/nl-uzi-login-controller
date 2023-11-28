@@ -122,12 +122,11 @@ async def oidc_login(
     oidc_provider_name: str,
     exchange_token: str,
     state: str,
-    scope: str,
     redirect_url: str = Depends(lambda: redirect_url_),
     session_service: SessionService = Depends(lambda: session_service_),
 ) -> RedirectResponse:
     return session_service.login_oidc(
-        oidc_provider_name, exchange_token, state, scope, redirect_url
+        oidc_provider_name, exchange_token, state, redirect_url
     )
 
 

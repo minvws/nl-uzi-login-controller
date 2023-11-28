@@ -17,9 +17,7 @@ config.read("app.conf")
 
 HTTP_TIMEOUT = int(config.get("app", "http_timeout"))
 
-ssl_cert = "".join([config.get("uvicorn", "base_dir"),"/" ,config.get("uvicorn", "cert_file")])
-ssl_key =  "".join([config.get("uvicorn", "base_dir"),"/" ,config.get("uvicorn", "key_file")])
-print(ssl_cert)
+
 def rand_pass(size: int) -> str:
     return secrets.token_urlsafe(size)
 
@@ -69,7 +67,9 @@ def load_oidc_well_known_config(
         provider_config_url = "".join(
             [provider["issuer"], "/.well-known/openid-configuration"]
         )
-        response = requests.get(provider_config_url, timeout=HTTP_TIMEOUT, verify=False).json()
+        response = requests.get(
+            provider_config_url, timeout=HTTP_TIMEOUT, verify=False
+        ).json()
         config_data = {"client_id": provider["client_id"], "discovery": response}
 
         provider_data = OIDCProviderConfiguration(**config_data)

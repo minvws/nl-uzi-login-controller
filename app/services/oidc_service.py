@@ -86,17 +86,8 @@ class OidcService:
         )
 
     def get_userinfo(
-        self, oidc_provider_name: str, state: str, code: str
-    ) -> Tuple[str, dict]:
-        login_state_from_redis: Union[str, None] = self._redis_client.get(
-            "oidc_state_" + state
-        )
-        if not login_state_from_redis:
-            raise InvalidStateException()
-        login_state: dict = json.loads(login_state_from_redis)
-        if not login_state:
-            raise InvalidStateException()
-
+        self, oidc_provider_name: str, code: str, login_state: dict
+    ) -> str:
         # TODO GB: error handling
         oidc_provider = self._oidc_providers_config[oidc_provider_name].discovery
         client_id = self._oidc_providers_config[oidc_provider_name].client_id
@@ -121,5 +112,4 @@ class OidcService:
         )
         if resp.headers["Content-Type"] != "application/jwt":
             raise RequestValidationError("Unsupported media type")
-        # TODO GB: move redis cache to session_service
-        return resp.text, login_state
+        return resp.text

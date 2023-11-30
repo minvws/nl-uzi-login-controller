@@ -31,7 +31,7 @@ class Session(BaseModel):
     irma_session_result: Union[Dict[str, Any], None]
     uzi_id: Union[str, None]
     loa_authn: Optional[SessionLoa]
-    oidc_provider_name: Optional[str]
+    oidc_provider_name: Union[str, None]
 
 
 # TODO: FS redefine this class properly, investigate pyop and oic class

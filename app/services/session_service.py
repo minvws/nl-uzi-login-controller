@@ -267,7 +267,7 @@ class SessionService:
             logger.warning("Session type is not OIDC")
             return HTTPException(status_code=404)
 
-        oidc_provider_name: str = session.oidc_provider_name
+        oidc_provider_name: str = session.oidc_provider_name # type: ignore
         userinfo_jwt = self._oidc_service.get_userinfo(
             oidc_provider_name, code, login_state
         )
@@ -289,14 +289,11 @@ class SessionService:
         )
 
     def _get_session_from_redis(self, exchange_token: str) -> Session:
-        try:
-            session_str: Union[str, bytes] = self._redis_client.get(
-                f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
-            )
-            session: Session = Session.parse_raw(session_str)
-            return session
-        except ValidationError as exc:
-            print(repr(exc.errors()[0]["type"]))
+        session_str: Union[str, bytes] = self._redis_client.get( # type: ignore
+            f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
+        )
+        session: Session = Session.parse_raw(session_str)
+        return session
 
     def _get_login_state_from_redis(self, state: str) -> dict:
         login_state_from_redis: Union[str, None] = self._redis_client.get(

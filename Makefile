@@ -23,12 +23,12 @@ pip-sync: ## synchronizes the .venv with the state of requirements.txt
 	. .venv/bin/activate && ${env} pip-sync
 	. .venv/bin/activate && ${env} pip install -e .
 
-setup: venv app.conf oidc-list
+setup: venv app.conf oidc-providers-list.json
 
 app.conf:
 	cp app.conf.example app.conf
 
-oidc-list:
+oidc-providers-list.json:
 	cp oidc-providers-list.json.example oidc-providers-list.json
 
 lint:

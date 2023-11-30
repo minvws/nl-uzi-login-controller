@@ -130,7 +130,7 @@ async def oidc_login(
     )
 
 
-@router.get("/login/oidc/{oidc_provider_name}/callback", response_model=None)
+@router.get("/login/oidc/callback/{oidc_provider_name}", response_model=None)
 async def callback_login(
     oidc_provider_name: str,
     state: str,

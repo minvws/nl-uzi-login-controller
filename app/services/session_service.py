@@ -232,13 +232,16 @@ class SessionService:
 
     def login_oidc(
         self,
-        oidc_provider_name: str,
         exchange_token: str,
         state: str,
         redirect_url: str,
     ) -> RedirectResponse:
+        session_str: Union[str, None] = self._redis_client.get(
+            f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
+        )
+        session: Session = Session.parse_raw(session_str)
         return self._oidc_service.get_authorize_response(
-            oidc_provider_name, exchange_token, state, redirect_url
+            session.oidc_provider_name, exchange_token, state, redirect_url
         )
 
     def login_oidc_callback(

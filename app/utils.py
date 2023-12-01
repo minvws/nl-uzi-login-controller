@@ -1,3 +1,4 @@
+import textwrap
 import base64
 import json
 import secrets
@@ -55,6 +56,18 @@ def kid_from_certificate(certificate: str) -> str:
 def read_json(file_path: str) -> Any:
     data = json.loads(file_content_raise_if_none(file_path))
     return data
+
+def enforce_cert_newlines(cert_data: str) -> str:
+    cert_data = (
+        cert_data.split("-----BEGIN CERTIFICATE-----")[-1]
+        .split("-----END CERTIFICATE-----")[0]
+        .strip()
+    )
+    return (
+        "-----BEGIN CERTIFICATE-----\n"
+        + "\n".join(textwrap.wrap(cert_data.replace(" ", ""), 64))
+        + "\n-----END CERTIFICATE-----"
+    )
 
 
 def load_oidc_well_known_config(

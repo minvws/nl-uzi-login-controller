@@ -7,6 +7,8 @@ from starlette.staticfiles import StaticFiles
 from app.dependencies import config
 from app.exceptions import general_exception_handler
 from app.router import router
+from app.routers import session
+from app.routers import login
 
 
 def run_app() -> FastAPI:
@@ -20,7 +22,9 @@ def run_app() -> FastAPI:
         datefmt="%m/%d/%Y %I:%M:%S %p",
     )
     fastapi = FastAPI()
-    fastapi.include_router(router)
+    # fastapi.include_router(router)
+    fastapi.include_router(session.router)
+    fastapi.include_router(login.router)
     fastapi.add_exception_handler(Exception, general_exception_handler)
     fastapi.mount("/static", StaticFiles(directory="static", html=True), name="static")
     return fastapi

@@ -13,6 +13,7 @@ from app.exceptions import GeneralServerException
 from app.models import OIDCProviderConfiguration
 from app.utils import rand_pass, nonce
 from app.services.jwt_service import JwtService
+from jwcrypto.jwk import JWK
 
 
 class OidcService:
@@ -22,7 +23,7 @@ class OidcService:
         redis_client: Redis,
         oidc_providers_well_known_config: Dict[str, OIDCProviderConfiguration],
         jwt_service: JwtService,
-        client_secret: str,
+        client_secret: JWK,
         redirect_uri: str,
         http_timeout: int,
         cache_expire: int,

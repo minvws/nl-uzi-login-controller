@@ -52,3 +52,4 @@ class OIDCProviderConfiguration(BaseModel):
     client_scopes: List[str]
     discovery: OIDCProviderDiscoveryBase = Field(None, alias="discovery")
     client_secret: Optional[str] = None
+    verify_ssl: bool = True

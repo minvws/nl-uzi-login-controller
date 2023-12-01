@@ -106,15 +106,15 @@ class OidcService:
         resp = requests.post(
             oidc_provider.token_endpoint,
             timeout=self._http_timeout,
-            verify=False,
             data=data,
+            verify=self._oidc_providers_config[oidc_provider_name].verify_ssl
         )
 
         resp = requests.get(
             oidc_provider.userinfo_endpoint,
             timeout=self._http_timeout,
-            verify=False,
             headers={"Authorization": "Bearer " + resp.json()["access_token"]},
+            verify=self._oidc_providers_config[oidc_provider_name].verify_ssl
         )
         if resp.headers["Content-Type"] != "application/jwt":
             raise RequestValidationError("Unsupported media type")

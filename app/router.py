@@ -119,7 +119,6 @@ async def uzi_login(
 
 @router.get("/login/oidc/start/{exchange_token}", response_model=None)
 async def oidc_login(
-    # oidc_provider_name: str,
     exchange_token: str,
     state: str,
     redirect_url: str = Depends(lambda: redirect_url_),

@@ -29,7 +29,9 @@ _redis_client = create_redis_client(config["redis"])
 
 # fetch and load providers
 providers_conf_path = config.get("oidc_provider", "config_list_path")
-providers_well_known_configs = load_oidc_well_known_config(providers_conf_path, environment)
+providers_well_known_configs = load_oidc_well_known_config(
+    providers_conf_path, environment
+)
 
 jwt_service = JwtService(
     jwt_priv_key=jwt_priv_key, crt_kid=kid_from_certificate(jwt_crt_content)

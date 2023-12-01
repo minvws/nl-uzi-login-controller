@@ -58,8 +58,7 @@ def read_json(file_path: str) -> Any:
 
 
 def load_oidc_well_known_config(
-    providers_config_path: str,
-    environment: str
+    providers_config_path: str, environment: str
 ) -> Dict[str, OIDCProviderConfiguration]:
     providers = read_json(providers_config_path)
     well_known_configs = {}
@@ -75,7 +74,11 @@ def load_oidc_well_known_config(
         client_secret = (
             provider["client_secret"] if "client_secret" in provider else None
         )
-        verify_ssl = environment == "production" or provider["verify_ssl"] if "verify_ssl" in provider else True
+        verify_ssl = (
+            environment == "production" or provider["verify_ssl"]
+            if "verify_ssl" in provider
+            else True
+        )
 
         provider_data = OIDCProviderConfiguration(
             verify_ssl=verify_ssl,

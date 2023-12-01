@@ -17,6 +17,7 @@ from app.exceptions import (
     IrmaSessionNotCompleted,
     IrmaServerException,
     GeneralServerException,
+    InvalidStateException,
 )
 from app.models import Session, SessionType, SessionStatus, SessionLoa
 from app.services.irma_service import IrmaService
@@ -231,34 +232,46 @@ class SessionService:
         )
 
     def login_oidc(
-        self, exchange_token: str, state: str, redirect_url: str
-    ) -> RedirectResponse:
+        self,
+        exchange_token: str,
+        state: str,
+        redirect_url: str,
+    ) -> Union[RedirectResponse, HTTPException]:
+        session: Session = self._get_session_from_redis(exchange_token)
+        oidc_provider_name = session.oidc_provider_name
+
+        if not oidc_provider_name:
+            logger.warning("OIDC Provider name not found")
+            return HTTPException(status_code=404)
+
         return self._oidc_service.get_authorize_response(
-            exchange_token, state, redirect_url
+            oidc_provider_name, exchange_token, state, redirect_url
         )
 
     def login_oidc_callback(
         self, state: str, code: str
     ) -> Union[RedirectResponse, HTTPException]:
-        userinfo_jwt, login_state = self._oidc_service.get_userinfo(state, code)
-        claims = self._jwt_service.from_jwt(self._oidc_provider_pub_key, userinfo_jwt)
+        login_state = self._get_login_state_from_redis(state)
         exchange_token = login_state["exchange_token"]
         redirect_url = login_state["redirect_url"]
         state = login_state["state"]
 
-        session_str: Union[str, None] = self._redis_client.get(
-            f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
-        )
-        if not session_str:
+        session = self._get_session_from_redis(exchange_token)
+        if not session:
             return RedirectResponse(
                 url=f"{redirect_url}?state={state}&error={SESSION_NOT_FOUND_ERROR}",
                 status_code=403,
             )
-
-        session: Session = Session.parse_raw(session_str)
         if not session.session_type == SessionType.OIDC:
             logger.warning("Session type is not OIDC")
             return HTTPException(status_code=404)
+
+        oidc_provider_name: str = session.oidc_provider_name  # type: ignore
+        userinfo_jwt = self._oidc_service.get_userinfo(
+            oidc_provider_name, code, login_state
+        )
+        claims = self._jwt_service.from_jwe(self._oidc_provider_pub_key, userinfo_jwt)
+
         session.session_status = SessionStatus.DONE
         session.uzi_id = claims["signed_uzi_number"]
         session.loa_authn = SessionLoa.HIGH
@@ -273,3 +286,23 @@ class SessionService:
             url=f"{redirect_url}?state={state}&exchange_token={session.exchange_token}",
             status_code=303,
         )
+
+    def _get_session_from_redis(self, exchange_token: str) -> Session:
+        session_str: Union[str, bytes] = self._redis_client.get(  # type: ignore
+            f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
+        )
+        session: Session = Session.parse_raw(session_str)
+        return session
+
+    def _get_login_state_from_redis(self, state: str) -> dict:
+        login_state_from_redis: Union[str, None] = self._redis_client.get(
+            "oidc_state_" + state
+        )
+        if not login_state_from_redis:
+            raise InvalidStateException()
+
+        login_state: dict = json.loads(login_state_from_redis)
+        if not login_state:
+            raise InvalidStateException()
+
+        return login_state

@@ -1,0 +1,9 @@
+[
+    {
+        "name": "zsm",
+        "issuer": "https://localhost:8003",
+        "client_id": "c512596d-43e0-430a-8926-6e5a53cb9ebc",
+        "scopes": ["openid"],
+        "verify_ssl": false
+    }
+]

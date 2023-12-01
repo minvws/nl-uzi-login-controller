@@ -1,11 +1,21 @@
 import base64
+import json
 import secrets
 from os import path
-from typing import Union
+from typing import Union, Any, Dict
+from configparser import ConfigParser
 from Cryptodome.IO import PEM
 from Cryptodome.Hash import SHA256
-
 from jwcrypto.jwk import JWK
+
+import requests
+
+from app.models import OIDCProviderConfiguration
+
+config = ConfigParser()
+config.read("app.conf")
+
+HTTP_TIMEOUT = int(config.get("app", "http_timeout"))
 
 
 def rand_pass(size: int) -> str:
@@ -40,3 +50,43 @@ def kid_from_certificate(certificate: str) -> str:
     sha = SHA256.new()
     sha.update(der[0])
     return base64.b64encode(sha.digest()).decode("utf-8")
+
+
+def read_json(file_path: str) -> Any:
+    data = json.loads(file_content_raise_if_none(file_path))
+    return data
+
+
+def load_oidc_well_known_config(
+    providers_config_path: str, environment: str
+) -> Dict[str, OIDCProviderConfiguration]:
+    providers = read_json(providers_config_path)
+    well_known_configs = {}
+
+    for provider in providers:
+        provider_config_url = "".join(
+            [provider["issuer"], "/.well-known/openid-configuration"]
+        )
+        response = requests.get(
+            provider_config_url, timeout=HTTP_TIMEOUT, verify=False
+        ).json()
+
+        client_secret = (
+            provider["client_secret"] if "client_secret" in provider else None
+        )
+        verify_ssl = (
+            environment == "production" or provider["verify_ssl"]
+            if "verify_ssl" in provider
+            else True
+        )
+
+        provider_data = OIDCProviderConfiguration(
+            verify_ssl=verify_ssl,
+            discovery=response,
+            client_id=provider["client_id"],
+            client_secret=client_secret,
+            client_scopes=provider["scopes"],
+        )
+        well_known_configs[provider["name"]] = provider_data
+
+    return well_known_configs

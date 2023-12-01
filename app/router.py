@@ -117,13 +117,13 @@ async def uzi_login(
     )
 
 
-@router.get("/login/oidc/start/{exchange_token}")
+@router.get("/login/oidc/start/{exchange_token}", response_model=None)
 async def oidc_login(
     exchange_token: str,
     state: str,
     redirect_url: str = Depends(lambda: redirect_url_),
     session_service: SessionService = Depends(lambda: session_service_),
-) -> RedirectResponse:
+) -> Union[RedirectResponse, HTTPException]:
     return session_service.login_oidc(exchange_token, state, redirect_url)
 
 

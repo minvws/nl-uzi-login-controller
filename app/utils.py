@@ -57,6 +57,7 @@ def read_json(file_path: str) -> Any:
     data = json.loads(file_content_raise_if_none(file_path))
     return data
 
+
 def enforce_cert_newlines(cert_data: str) -> str:
     cert_data = (
         cert_data.split("-----BEGIN CERTIFICATE-----")[-1]

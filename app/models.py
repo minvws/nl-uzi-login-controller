@@ -51,3 +51,4 @@ class OIDCProviderConfiguration(BaseModel):
     client_id: str
     client_scopes: List[str]
     discovery: OIDCProviderDiscoveryBase = Field(None, alias="discovery")
+    client_secret: Optional[str] = None

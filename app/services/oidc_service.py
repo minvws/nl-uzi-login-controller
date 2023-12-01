@@ -9,7 +9,6 @@ import requests
 from fastapi.exceptions import RequestValidationError
 from redis import Redis
 from starlette.responses import RedirectResponse
-from jwcrypto.jwk import JWK
 from app.exceptions import GeneralServerException
 from app.models import OIDCProviderConfiguration
 from app.utils import rand_pass, nonce
@@ -23,13 +22,11 @@ class OidcService:
         redis_client: Redis,
         oidc_providers_well_known_config: Dict[str, OIDCProviderConfiguration],
         jwt_service: JwtService,
-        client_secret: JWK,
         redirect_uri: str,
         http_timeout: int,
         cache_expire: int,
     ):
         self._redis_client = redis_client
-        self._client_secret = client_secret
         self._redirect_uri = redirect_uri
         self._http_timeout = http_timeout
         self._cache_expire = cache_expire
@@ -93,22 +90,30 @@ class OidcService:
         oidc_provider = self._oidc_providers_config[oidc_provider_name].discovery
         client_id = self._oidc_providers_config[oidc_provider_name].client_id
 
+        data = {
+            "code": code,
+            "code_verifier": login_state["code_verifier"],
+            "client_id": client_id,
+            "grant_type": "authorization_code",
+            "redirect_uri": self._redirect_uri,
+        }
+
+        if self._oidc_providers_config[oidc_provider_name].client_secret is not None:
+            data["client_secret"] = self._oidc_providers_config[
+                oidc_provider_name
+            ].client_secret
+
         resp = requests.post(
             oidc_provider.token_endpoint,
             timeout=self._http_timeout,
-            data={
-                "code": code,
-                "code_verifier": login_state["code_verifier"],
-                "client_id": client_id,
-                "client_secret": self._client_secret,
-                "grant_type": "authorization_code",
-                "redirect_uri": self._redirect_uri,
-            },
+            verify=False,
+            data=data,
         )
 
         resp = requests.get(
             oidc_provider.userinfo_endpoint,
             timeout=self._http_timeout,
+            verify=False,
             headers={"Authorization": "Bearer " + resp.json()["access_token"]},
         )
         if resp.headers["Content-Type"] != "application/jwt":

@@ -43,7 +43,6 @@ irma_service = IrmaService(
 oidc_service = OidcService(
     redis_client=_redis_client,
     oidc_providers_well_known_config=providers_well_known_configs,
-    client_secret=oidc_provider_pub_key,
     redirect_uri=config["oidc_provider"]["redirect_uri"],
     http_timeout=config.getint("app", "http_timeout", fallback=30),
     cache_expire=config.getint("redis", "expire", fallback=60),

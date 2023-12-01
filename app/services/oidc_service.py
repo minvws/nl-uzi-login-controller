@@ -59,18 +59,18 @@ class OidcService:
 
         oidc_provider = self._oidc_providers_config[oidc_provider_name].discovery
         client_id = self._oidc_providers_config[oidc_provider_name].client_id
-        client_scope = " ".join(
-            self._oidc_providers_config[oidc_provider_name].client_scopes
-        )
 
-        if client_scope not in oidc_provider.scopes_supported:
-            # TODO: FS add HTTP exceptions to the application
-            raise GeneralServerException()
+        for scope in self._oidc_providers_config[oidc_provider_name].client_scopes:
+            if scope not in oidc_provider.scopes_supported:
+                # TODO: FS add HTTP exceptions to the application
+                raise GeneralServerException()
 
         params = {
             "client_id": client_id,
             "response_type": "code",
-            "scope": client_scope,
+            "scope": " ".join(
+                self._oidc_providers_config[oidc_provider_name].client_scopes
+            ),
             "redirect_uri": self._redirect_uri,
             "state": oidc_state,
             "nonce": nonce(50),

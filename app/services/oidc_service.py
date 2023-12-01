@@ -9,11 +9,11 @@ import requests
 from fastapi.exceptions import RequestValidationError
 from redis import Redis
 from starlette.responses import RedirectResponse
+from jwcrypto.jwk import JWK
 from app.exceptions import GeneralServerException
 from app.models import OIDCProviderConfiguration
 from app.utils import rand_pass, nonce
 from app.services.jwt_service import JwtService
-from jwcrypto.jwk import JWK
 
 
 class OidcService:

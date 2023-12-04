@@ -10,7 +10,7 @@ from fastapi.exceptions import RequestValidationError
 from redis import Redis
 from starlette.responses import RedirectResponse
 from app.exceptions import GeneralServerException
-from app.models import OIDCProviderConfiguration
+from app.models.oidc import OIDCProviderConfiguration
 from app.utils import rand_pass, nonce
 from app.services.jwt_service import JwtService
 

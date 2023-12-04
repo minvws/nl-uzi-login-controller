@@ -11,7 +11,7 @@ from jwcrypto.jwk import JWK
 
 import requests
 
-from app.models import OIDCProviderConfiguration
+from app.models.oidc import OIDCProviderConfiguration
 
 config = ConfigParser()
 config.read("app.conf")

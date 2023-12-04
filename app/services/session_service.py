@@ -19,7 +19,7 @@ from app.exceptions import (
     GeneralServerException,
     InvalidStateException,
 )
-from app.models import Session, SessionType, SessionStatus, SessionLoa
+from app.models.session import Session, SessionType, SessionStatus, SessionLoa
 from app.services.irma_service import IrmaService
 from app.services.jwt_service import JwtService
 from app.services.oidc_service import OidcService

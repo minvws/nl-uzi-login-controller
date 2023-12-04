@@ -24,6 +24,8 @@ from app.services.irma_service import IrmaService
 from app.services.jwt_service import JwtService
 from app.services.oidc_service import OidcService
 from app.utils import rand_pass
+from app.models.login_state import LoginState
+from operator import itemgetter
 
 REDIS_SESSION_KEY = "session"
 SESSION_NOT_FOUND_ERROR = "session%20not%20found"
@@ -252,9 +254,9 @@ class SessionService:
         self, state: str, code: str
     ) -> Union[RedirectResponse, HTTPException]:
         login_state = self._get_login_state_from_redis(state)
-        exchange_token = login_state["exchange_token"]
-        redirect_url = login_state["redirect_url"]
-        state = login_state["state"]
+        exchange_token, state, code_verifier, redirect_url = itemgetter(
+            "exchange_token", "state", "code_verifier", "redirect_url",
+        )(login_state)
 
         session = self._get_session_from_redis(exchange_token)
         if not session:
@@ -268,7 +270,7 @@ class SessionService:
 
         oidc_provider_name: str = session.oidc_provider_name  # type: ignore
         userinfo_jwt = self._oidc_service.get_userinfo(
-            oidc_provider_name, code, login_state
+            oidc_provider_name, code, code_verifier
         )
         claims = self._jwt_service.from_jwe(self._oidc_provider_pub_key, userinfo_jwt)
 
@@ -294,14 +296,14 @@ class SessionService:
         session: Session = Session.parse_raw(session_str)
         return session
 
-    def _get_login_state_from_redis(self, state: str) -> dict:
+    def _get_login_state_from_redis(self, state: str) -> LoginState:
         login_state_from_redis: Union[str, None] = self._redis_client.get(
             "oidc_state_" + state
         )
         if not login_state_from_redis:
             raise InvalidStateException()
 
-        login_state: dict = json.loads(login_state_from_redis)
+        login_state = LoginState(**json.loads(login_state_from_redis))
         if not login_state:
             raise InvalidStateException()
 

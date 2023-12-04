@@ -11,6 +11,7 @@ from redis import Redis
 from starlette.responses import RedirectResponse
 from app.exceptions import GeneralServerException
 from app.models.oidc import OIDCProviderConfiguration
+from app.models.login_state import LoginState
 from app.utils import rand_pass, nonce
 from app.services.jwt_service import JwtService
 
@@ -46,15 +47,15 @@ class OidcService:
         code_challenge = encoded.decode("ascii")[:-1]
 
         oidc_state = rand_pass(100)
-        login_state = {
-            "exchange_token": exchange_token,
-            "state": state,
-            "code_verifier": code_verifier,
-            "redirect_url": redirect_url,
-        }
+        login_state = LoginState(
+            exchange_token=exchange_token,
+            state=state,
+            code_verifier=code_verifier,
+            redirect_url=redirect_url,
+        )
 
         redis_key = "oidc_state_" + oidc_state
-        self._redis_client.set(redis_key, json.dumps(login_state))
+        self._redis_client.set(redis_key, json.dumps(login_state.to_dict()))
         self._redis_client.expire(redis_key, self._cache_expire)
 
         oidc_provider = self._oidc_providers_config[oidc_provider_name].discovery
@@ -84,7 +85,7 @@ class OidcService:
         )
 
     def get_userinfo(
-        self, oidc_provider_name: str, code: str, login_state: dict
+        self, oidc_provider_name: str, code: str, code_verifier: str
     ) -> str:
         # TODO GB: error handling
         oidc_provider = self._oidc_providers_config[oidc_provider_name].discovery
@@ -92,7 +93,7 @@ class OidcService:
 
         data = {
             "code": code,
-            "code_verifier": login_state["code_verifier"],
+            "code_verifier": code_verifier,
             "client_id": client_id,
             "grant_type": "authorization_code",
             "redirect_uri": self._redirect_uri,

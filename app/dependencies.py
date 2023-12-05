@@ -45,11 +45,10 @@ irma_service = IrmaService(
 )
 
 oidc_service = OidcService(
-    redis_client=_redis_client,
+    # redis_client=_redis_client,
     oidc_providers_well_known_config=providers_well_known_configs,
     redirect_uri=config["oidc_provider"]["redirect_uri"],
     http_timeout=config.getint("app", "http_timeout", fallback=30),
-    cache_expire=config.getint("redis", "expire", fallback=60),
     jwt_service=jwt_service,
 )
 
@@ -60,7 +59,7 @@ session_service_ = SessionService(
     jwt_service=jwt_service,
     irma_disclose_prefix=config["irma"]["irma_disclose_prefix"],
     redis_namespace=config["redis"]["namespace"],
-    expires_in_s=int(config["redis"]["expire"]),
+    expires_in_s=config.getint("redis", "expire", fallback=60),
     jwt_issuer=config["session"]["jwt_issuer"],
     jwt_issuer_crt_path=config["session"]["jwt_issuer_crt_path"],
     jwt_audience=config["session"]["jwt_audience"],

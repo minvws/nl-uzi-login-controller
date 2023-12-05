@@ -2,6 +2,9 @@ import json
 import logging
 import time
 from typing import Union
+import secrets
+import hashlib
+import base64
 
 from configparser import ConfigParser
 from fastapi.responses import JSONResponse
@@ -240,13 +243,29 @@ class SessionService:
     ) -> Union[RedirectResponse, HTTPException]:
         session: Session = self._get_session_from_redis(exchange_token)
         oidc_provider_name = session.oidc_provider_name
-
         if not oidc_provider_name:
             logger.warning("OIDC Provider name not found")
             return HTTPException(status_code=404)
 
+        code_verifier = secrets.token_urlsafe(96)[:64]
+        hashed = hashlib.sha256(code_verifier.encode("ascii")).digest()
+        encoded = base64.urlsafe_b64encode(hashed)
+        code_challenge = encoded.decode("ascii")[:-1]
+
+        oidc_state = rand_pass(100)
+        login_state = LoginState(
+            exchange_token=exchange_token,
+            state=state,
+            code_verifier=code_verifier,
+            redirect_url=redirect_url,
+        )
+
+        redis_key = "oidc_state_" + oidc_state
+        self._redis_client.set(redis_key, json.dumps(login_state.to_dict()))
+        self._redis_client.expire(redis_key, self._expires_in_s)
+
         return self._oidc_service.get_authorize_response(
-            oidc_provider_name, exchange_token, state, redirect_url
+            oidc_provider_name, code_challenge, oidc_state
         )
 
     def login_oidc_callback(

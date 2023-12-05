@@ -7,10 +7,7 @@ class LoginState(BaseModel):
     code_verifier: str
     redirect_url: str
 
-    def __getitem__(self, key):
-        return getattr(self, key)
-
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
             "exchange_token": self.exchange_token,
             "state": self.state,

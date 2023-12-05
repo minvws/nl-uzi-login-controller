@@ -25,7 +25,6 @@ from app.services.jwt_service import JwtService
 from app.services.oidc_service import OidcService
 from app.utils import rand_pass
 from app.models.login_state import LoginState
-from operator import itemgetter
 
 REDIS_SESSION_KEY = "session"
 SESSION_NOT_FOUND_ERROR = "session%20not%20found"
@@ -93,6 +92,8 @@ class SessionService:
             session_status=SessionStatus.INITIALIZED,
             **claims,
         )
+
+        print(claims)
 
         if session.session_type == SessionType.IRMA:
             session.irma_disclose_response = self._irma_service.create_disclose_session(
@@ -254,9 +255,10 @@ class SessionService:
         self, state: str, code: str
     ) -> Union[RedirectResponse, HTTPException]:
         login_state = self._get_login_state_from_redis(state)
-        exchange_token, state, code_verifier, redirect_url = itemgetter(
-            "exchange_token", "state", "code_verifier", "redirect_url",
-        )(login_state)
+        exchange_token = login_state.exchange_token
+        state = login_state.state
+        code_verifier = login_state.code_verifier
+        redirect_url = login_state.redirect_url
 
         session = self._get_session_from_redis(exchange_token)
         if not session:
@@ -272,6 +274,7 @@ class SessionService:
         userinfo_jwt = self._oidc_service.get_userinfo(
             oidc_provider_name, code, code_verifier
         )
+        print(userinfo_jwt)
         claims = self._jwt_service.from_jwe(self._oidc_provider_pub_key, userinfo_jwt)
 
         session.session_status = SessionStatus.DONE

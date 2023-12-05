@@ -90,6 +90,7 @@ class OidcService:
         # TODO GB: error handling
         oidc_provider = self._oidc_providers_config[oidc_provider_name].discovery
         client_id = self._oidc_providers_config[oidc_provider_name].client_id
+        client_secret = self._oidc_providers_config[oidc_provider_name].client_secret
 
         data = {
             "code": code,
@@ -99,10 +100,8 @@ class OidcService:
             "redirect_uri": self._redirect_uri,
         }
 
-        if self._oidc_providers_config[oidc_provider_name].client_secret is not None:
-            data["client_secret"] = self._oidc_providers_config[
-                oidc_provider_name
-            ].client_secret
+        if client_secret is not None and isinstance(client_secret, str):
+            data["client_secret"] = client_secret
 
         resp = requests.post(
             oidc_provider.token_endpoint,

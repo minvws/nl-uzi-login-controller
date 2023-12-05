@@ -93,8 +93,6 @@ class SessionService:
             **claims,
         )
 
-        print(claims)
-
         if session.session_type == SessionType.IRMA:
             session.irma_disclose_response = self._irma_service.create_disclose_session(
                 [
@@ -255,6 +253,7 @@ class SessionService:
         self, state: str, code: str
     ) -> Union[RedirectResponse, HTTPException]:
         login_state = self._get_login_state_from_redis(state)
+        # TODO: FS Simplify the below assignment
         exchange_token = login_state.exchange_token
         state = login_state.state
         code_verifier = login_state.code_verifier
@@ -274,7 +273,6 @@ class SessionService:
         userinfo_jwt = self._oidc_service.get_userinfo(
             oidc_provider_name, code, code_verifier
         )
-        print(userinfo_jwt)
         claims = self._jwt_service.from_jwe(self._oidc_provider_pub_key, userinfo_jwt)
 
         session.session_status = SessionStatus.DONE

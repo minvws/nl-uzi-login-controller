@@ -2,6 +2,7 @@ import time
 from urllib.parse import urlencode
 from typing import Dict
 
+import logging
 import requests
 from fastapi.exceptions import RequestValidationError
 from starlette.responses import RedirectResponse
@@ -9,7 +10,6 @@ from app.exceptions import GeneralServerException
 from app.models.oidc import OIDCProviderConfiguration, OIDCProviderDiscovery
 from app.utils import nonce
 from app.services.jwt_service import JwtService
-import logging
 
 
 class OidcService:
@@ -83,14 +83,14 @@ class OidcService:
             data["client_secret"] = client_secret
 
         resp = requests.post(
-            oidc_provider.token_endpoint, # type: ignore
+            oidc_provider.token_endpoint,  # type: ignore
             timeout=self._http_timeout,
             data=data,
             verify=self._oidc_providers_config[oidc_provider_name].verify_ssl,
         )
 
         resp = requests.get(
-            oidc_provider.userinfo_endpoint, # type: ignore
+            oidc_provider.userinfo_endpoint,  # type: ignore
             timeout=self._http_timeout,
             headers={"Authorization": "Bearer " + resp.json()["access_token"]},
             verify=self._oidc_providers_config[oidc_provider_name].verify_ssl,
@@ -117,12 +117,11 @@ class OidcService:
                         oidc_provider_name
                     ].discovery = well_known_config
                     logging.info(
-                        f"{oidc_provider_name} discovery config has been updated successfully"
+                        "%s discovery config has been updated successfully",
+                        oidc_provider_name,
                     )
                     successful_update = True
                 except requests.ConnectionError:
-                    logging.error(f"request to {well_known_url} failed")
+                    logging.error("request to %s failed", well_known_url)
                     time.sleep(1)
                     counter += 1
-            else:
-                pass

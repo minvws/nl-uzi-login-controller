@@ -2,6 +2,9 @@ import json
 import logging
 import time
 from typing import Union
+import secrets
+import hashlib
+import base64
 
 from configparser import ConfigParser
 from fastapi.responses import JSONResponse
@@ -19,11 +22,12 @@ from app.exceptions import (
     GeneralServerException,
     InvalidStateException,
 )
-from app.models import Session, SessionType, SessionStatus, SessionLoa
+from app.models.session import Session, SessionType, SessionStatus, SessionLoa
 from app.services.irma_service import IrmaService
 from app.services.jwt_service import JwtService
 from app.services.oidc_service import OidcService
 from app.utils import rand_pass
+from app.models.login_state import LoginState
 
 REDIS_SESSION_KEY = "session"
 SESSION_NOT_FOUND_ERROR = "session%20not%20found"
@@ -239,22 +243,40 @@ class SessionService:
     ) -> Union[RedirectResponse, HTTPException]:
         session: Session = self._get_session_from_redis(exchange_token)
         oidc_provider_name = session.oidc_provider_name
-
         if not oidc_provider_name:
             logger.warning("OIDC Provider name not found")
             return HTTPException(status_code=404)
 
+        code_verifier = secrets.token_urlsafe(96)[:64]
+        hashed = hashlib.sha256(code_verifier.encode("ascii")).digest()
+        encoded = base64.urlsafe_b64encode(hashed)
+        code_challenge = encoded.decode("ascii")[:-1]
+
+        oidc_state = rand_pass(100)
+        login_state = LoginState(
+            exchange_token=exchange_token,
+            state=state,
+            code_verifier=code_verifier,
+            redirect_url=redirect_url,
+        )
+
+        redis_key = "oidc_state_" + oidc_state
+        self._redis_client.set(redis_key, json.dumps(login_state.to_dict()))
+        self._redis_client.expire(redis_key, self._expires_in_s)
+
         return self._oidc_service.get_authorize_response(
-            oidc_provider_name, exchange_token, state, redirect_url
+            oidc_provider_name, code_challenge, oidc_state
         )
 
     def login_oidc_callback(
         self, state: str, code: str
     ) -> Union[RedirectResponse, HTTPException]:
         login_state = self._get_login_state_from_redis(state)
-        exchange_token = login_state["exchange_token"]
-        redirect_url = login_state["redirect_url"]
-        state = login_state["state"]
+        # TODO: FS Simplify the below assignment
+        exchange_token = login_state.exchange_token
+        state = login_state.state
+        code_verifier = login_state.code_verifier
+        redirect_url = login_state.redirect_url
 
         session = self._get_session_from_redis(exchange_token)
         if not session:
@@ -268,7 +290,7 @@ class SessionService:
 
         oidc_provider_name: str = session.oidc_provider_name  # type: ignore
         userinfo_jwt = self._oidc_service.get_userinfo(
-            oidc_provider_name, code, login_state
+            oidc_provider_name, code, code_verifier
         )
         claims = self._jwt_service.from_jwe(self._oidc_provider_pub_key, userinfo_jwt)
 
@@ -294,14 +316,14 @@ class SessionService:
         session: Session = Session.parse_raw(session_str)
         return session
 
-    def _get_login_state_from_redis(self, state: str) -> dict:
+    def _get_login_state_from_redis(self, state: str) -> LoginState:
         login_state_from_redis: Union[str, None] = self._redis_client.get(
             "oidc_state_" + state
         )
         if not login_state_from_redis:
             raise InvalidStateException()
 
-        login_state: dict = json.loads(login_state_from_redis)
+        login_state = LoginState(**json.loads(login_state_from_redis))
         if not login_state:
             raise InvalidStateException()
 

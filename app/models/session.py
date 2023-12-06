@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import Union, Dict, Any, Optional, List
+from typing import Union, Dict, Any, Optional
 
-from pydantic import BaseModel, ConfigDict, Extra, Field
+from pydantic import BaseModel
 
 
 class SessionLoa(str, Enum):
@@ -32,24 +32,3 @@ class Session(BaseModel):
     uzi_id: Union[str, None]
     loa_authn: Optional[SessionLoa]
     oidc_provider_name: Union[str, None]
-
-
-# TODO: FS redefine this class properly, investigate pyop and oic class
-class OIDCProviderDiscoveryBase(BaseModel):
-    model_config = ConfigDict(extra=Extra.allow)
-
-    issuer: str
-    authorization_endpoint: str
-    token_endpoint: str
-    userinfo_endpoint: str
-    jwks_uri: str
-    scopes_supported: List[str]
-    token_endpoint_auth_methods_supported: Optional[List[str]]
-
-
-class OIDCProviderConfiguration(BaseModel):
-    client_id: str
-    client_scopes: List[str]
-    discovery: OIDCProviderDiscoveryBase = Field(None, alias="discovery")
-    client_secret: Optional[str] = None
-    verify_ssl: bool = True

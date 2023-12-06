@@ -1,17 +1,12 @@
-import base64
-import hashlib
-import json
-import secrets
 from urllib.parse import urlencode
 from typing import Dict
 
 import requests
 from fastapi.exceptions import RequestValidationError
-from redis import Redis
 from starlette.responses import RedirectResponse
 from app.exceptions import GeneralServerException
-from app.models import OIDCProviderConfiguration
-from app.utils import rand_pass, nonce
+from app.models.oidc import OIDCProviderConfiguration
+from app.utils import nonce
 from app.services.jwt_service import JwtService
 
 
@@ -19,44 +14,22 @@ class OidcService:
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        redis_client: Redis,
         oidc_providers_well_known_config: Dict[str, OIDCProviderConfiguration],
         jwt_service: JwtService,
         redirect_uri: str,
         http_timeout: int,
-        cache_expire: int,
     ):
-        self._redis_client = redis_client
         self._redirect_uri = redirect_uri
         self._http_timeout = http_timeout
-        self._cache_expire = cache_expire
         self._oidc_providers_config = oidc_providers_well_known_config
         self._jwt_service = jwt_service
 
     def get_authorize_response(
         self,
         oidc_provider_name: str,
-        exchange_token: str,
-        state: str,
-        redirect_url: str,
+        code_challenge: str,
+        oidc_state: str,
     ) -> RedirectResponse:
-        code_verifier = secrets.token_urlsafe(96)[:64]
-        hashed = hashlib.sha256(code_verifier.encode("ascii")).digest()
-        encoded = base64.urlsafe_b64encode(hashed)
-        code_challenge = encoded.decode("ascii")[:-1]
-
-        oidc_state = rand_pass(100)
-        login_state = {
-            "exchange_token": exchange_token,
-            "state": state,
-            "code_verifier": code_verifier,
-            "redirect_url": redirect_url,
-        }
-
-        redis_key = "oidc_state_" + oidc_state
-        self._redis_client.set(redis_key, json.dumps(login_state))
-        self._redis_client.expire(redis_key, self._cache_expire)
-
         oidc_provider = self._oidc_providers_config[oidc_provider_name].discovery
         client_id = self._oidc_providers_config[oidc_provider_name].client_id
 
@@ -84,24 +57,23 @@ class OidcService:
         )
 
     def get_userinfo(
-        self, oidc_provider_name: str, code: str, login_state: dict
+        self, oidc_provider_name: str, code: str, code_verifier: str
     ) -> str:
         # TODO GB: error handling
         oidc_provider = self._oidc_providers_config[oidc_provider_name].discovery
         client_id = self._oidc_providers_config[oidc_provider_name].client_id
+        client_secret = self._oidc_providers_config[oidc_provider_name].client_secret
 
         data = {
             "code": code,
-            "code_verifier": login_state["code_verifier"],
+            "code_verifier": code_verifier,
             "client_id": client_id,
             "grant_type": "authorization_code",
             "redirect_uri": self._redirect_uri,
         }
 
-        if self._oidc_providers_config[oidc_provider_name].client_secret is not None:
-            data["client_secret"] = self._oidc_providers_config[
-                oidc_provider_name
-            ].client_secret
+        if client_secret is not None and isinstance(client_secret, str):
+            data["client_secret"] = client_secret
 
         resp = requests.post(
             oidc_provider.token_endpoint,

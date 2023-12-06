@@ -1,3 +1,4 @@
+import time
 from urllib.parse import urlencode
 from typing import Dict
 
@@ -5,9 +6,10 @@ import requests
 from fastapi.exceptions import RequestValidationError
 from starlette.responses import RedirectResponse
 from app.exceptions import GeneralServerException
-from app.models.oidc import OIDCProviderConfiguration
+from app.models.oidc import OIDCProviderConfiguration, OIDCProviderDiscovery
 from app.utils import nonce
 from app.services.jwt_service import JwtService
+import logging
 
 
 class OidcService:
@@ -30,8 +32,13 @@ class OidcService:
         code_challenge: str,
         oidc_state: str,
     ) -> RedirectResponse:
-        oidc_provider = self._oidc_providers_config[oidc_provider_name].discovery
+        self._check_and_update_provider_discovery(oidc_provider_name)
+
         client_id = self._oidc_providers_config[oidc_provider_name].client_id
+        oidc_provider = self._oidc_providers_config[oidc_provider_name].discovery
+
+        if not oidc_provider:
+            raise GeneralServerException()
 
         for scope in self._oidc_providers_config[oidc_provider_name].client_scopes:
             if scope not in oidc_provider.scopes_supported:
@@ -76,14 +83,14 @@ class OidcService:
             data["client_secret"] = client_secret
 
         resp = requests.post(
-            oidc_provider.token_endpoint,
+            oidc_provider.token_endpoint, # type: ignore
             timeout=self._http_timeout,
             data=data,
             verify=self._oidc_providers_config[oidc_provider_name].verify_ssl,
         )
 
         resp = requests.get(
-            oidc_provider.userinfo_endpoint,
+            oidc_provider.userinfo_endpoint, # type: ignore
             timeout=self._http_timeout,
             headers={"Authorization": "Bearer " + resp.json()["access_token"]},
             verify=self._oidc_providers_config[oidc_provider_name].verify_ssl,
@@ -91,3 +98,31 @@ class OidcService:
         if resp.headers["Content-Type"] != "application/jwt":
             raise RequestValidationError("Unsupported media type")
         return resp.text
+
+    def _check_and_update_provider_discovery(self, oidc_provider_name: str) -> None:
+        oidc_provider_config = self._oidc_providers_config[oidc_provider_name]
+        if not oidc_provider_config.discovery:
+            well_known_url = "".join(
+                [oidc_provider_config.issuer_url, "/.well-known/openid-configuration"]
+            )
+            successful_update = False
+            counter = 1
+            while not successful_update and counter < 1000:
+                try:
+                    data = requests.get(
+                        well_known_url, timeout=self._http_timeout, verify=False
+                    )
+                    well_known_config = OIDCProviderDiscovery(**data.json())
+                    self._oidc_providers_config[
+                        oidc_provider_name
+                    ].discovery = well_known_config
+                    logging.info(
+                        f"{oidc_provider_name} discovery config has been updated successfully"
+                    )
+                    successful_update = True
+                except requests.ConnectionError:
+                    logging.error(f"request to {well_known_url} failed")
+                    time.sleep(1)
+                    counter += 1
+            else:
+                pass

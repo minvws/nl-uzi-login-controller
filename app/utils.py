@@ -78,12 +78,17 @@ def load_oidc_well_known_config(
     well_known_configs = {}
 
     for provider in providers:
+        successful_response = False
         provider_config_url = "".join(
             [provider["issuer"], "/.well-known/openid-configuration"]
         )
-        response = requests.get(
-            provider_config_url, timeout=HTTP_TIMEOUT, verify=False
-        ).json()
+        try:
+            data = requests.get(provider_config_url, timeout=HTTP_TIMEOUT, verify=False)
+            successful_response = True
+        except requests.ConnectionError:
+            pass
+
+        response = data.json() if successful_response else None
 
         client_secret = (
             provider["client_secret"] if "client_secret" in provider else None
@@ -97,6 +102,7 @@ def load_oidc_well_known_config(
         provider_data = OIDCProviderConfiguration(
             verify_ssl=verify_ssl,
             discovery=response,
+            issuer_url=provider["issuer"],
             client_id=provider["client_id"],
             client_secret=client_secret,
             client_scopes=provider["scopes"],

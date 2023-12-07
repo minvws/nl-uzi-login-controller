@@ -40,8 +40,7 @@ class OidcService:
         oidc_provider = self._oidc_providers_config[oidc_provider_name].discovery
 
         if not oidc_provider:
-            # raise GeneralServerException()
-            return RedirectResponse(url="https://localhost:8006", status_code=500)
+            raise GeneralServerException()
 
         for scope in self._oidc_providers_config[oidc_provider_name].client_scopes:
             if scope not in oidc_provider.scopes_supported:

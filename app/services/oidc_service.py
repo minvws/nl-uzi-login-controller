@@ -20,11 +20,13 @@ class OidcService:
         jwt_service: JwtService,
         redirect_uri: str,
         http_timeout: int,
+        http_retries: int,
     ):
         self._redirect_uri = redirect_uri
         self._http_timeout = http_timeout
         self._oidc_providers_config = oidc_providers_well_known_config
         self._jwt_service = jwt_service
+        self._http_retries = http_retries
 
     def get_authorize_response(
         self,
@@ -38,7 +40,8 @@ class OidcService:
         oidc_provider = self._oidc_providers_config[oidc_provider_name].discovery
 
         if not oidc_provider:
-            raise GeneralServerException()
+            # raise GeneralServerException()
+            return RedirectResponse(url="https://localhost:8006", status_code=500)
 
         for scope in self._oidc_providers_config[oidc_provider_name].client_scopes:
             if scope not in oidc_provider.scopes_supported:
@@ -106,17 +109,17 @@ class OidcService:
                 [oidc_provider.issuer_url, "/.well-known/openid-configuration"]
             )
             oidc_provider_discovery = self._fetch_oidc_provider_discovery_config(
-                oidc_provider_well_known_url, 1000
+                oidc_provider_well_known_url
             )
             self._oidc_providers_config[
                 oidc_provider_name
             ].discovery = oidc_provider_discovery
 
     def _fetch_oidc_provider_discovery_config(
-        self, provider_well_known_url: str, nb_of_retries: int
+        self, provider_well_known_url: str
     ) -> Optional[OIDCProviderDiscovery]:
         retries = 1
-        while retries < nb_of_retries:
+        while retries < self._http_retries:
             try:
                 data = requests.get(
                     provider_well_known_url, timeout=self._http_timeout, verify=False

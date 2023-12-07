@@ -49,6 +49,7 @@ oidc_service = OidcService(
     redirect_uri=config["oidc_provider"]["redirect_uri"],
     http_timeout=config.getint("app", "http_timeout", fallback=30),
     jwt_service=jwt_service,
+    http_retries=config.getint("oidc_provider", "http_retries"),
 )
 
 session_service_ = SessionService(

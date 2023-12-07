@@ -100,13 +100,13 @@ class OidcService:
         return resp.text
 
     def _check_and_update_provider_discovery(self, oidc_provider_name: str) -> None:
-        oidc_provider_config = self._oidc_providers_config[oidc_provider_name]
-        if not oidc_provider_config.discovery:
-            provider_well_known_url = "".join(
-                [oidc_provider_config.issuer_url, "/.well-known/openid-configuration"]
+        oidc_provider = self._oidc_providers_config[oidc_provider_name]
+        if not oidc_provider.discovery:
+            oidc_provider_well_known_url = "".join(
+                [oidc_provider.issuer_url, "/.well-known/openid-configuration"]
             )
             oidc_provider_discovery = self._fetch_oidc_provider_discovery_config(
-                provider_well_known_url, 1000
+                oidc_provider_well_known_url, 1000
             )
             self._oidc_providers_config[
                 oidc_provider_name

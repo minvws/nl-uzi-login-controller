@@ -2,6 +2,7 @@ import textwrap
 import base64
 import json
 import secrets
+import time
 from os import path
 from typing import Union, Any, Dict
 from configparser import ConfigParser
@@ -11,7 +12,7 @@ from jwcrypto.jwk import JWK
 
 import requests
 
-from app.models.oidc import OIDCProviderConfiguration
+from app.models.oidc import OIDCProvider
 
 config = ConfigParser()
 config.read("app.conf")
@@ -71,24 +72,28 @@ def enforce_cert_newlines(cert_data: str) -> str:
     )
 
 
+def json_fetch_url(url: str, retries: int = 0) -> Any:
+    retry = 0
+    while retry <= retries:
+        try:
+            data = requests.get(url, timeout=HTTP_TIMEOUT, verify=False)
+            return data.json()
+        except requests.ConnectionError:
+            time.sleep(1)
+            retry += 1
+
+
 def load_oidc_well_known_config(
     providers_config_path: str, environment: str
-) -> Dict[str, OIDCProviderConfiguration]:
+) -> Dict[str, OIDCProvider]:
     providers = read_json(providers_config_path)
     well_known_configs = {}
 
     for provider in providers:
-        successful_response = False
         provider_config_url = "".join(
             [provider["issuer"], "/.well-known/openid-configuration"]
         )
-        try:
-            data = requests.get(provider_config_url, timeout=HTTP_TIMEOUT, verify=False)
-            successful_response = True
-        except requests.ConnectionError:
-            pass
-
-        response = data.json() if successful_response else None
+        discovery = json_fetch_url(provider_config_url)
 
         client_secret = (
             provider["client_secret"] if "client_secret" in provider else None
@@ -99,9 +104,9 @@ def load_oidc_well_known_config(
             else True
         )
 
-        provider_data = OIDCProviderConfiguration(
+        provider_data = OIDCProvider(
             verify_ssl=verify_ssl,
-            discovery=response,
+            well_known_configuration=discovery if discovery else None,
             issuer_url=provider["issuer"],
             client_id=provider["client_id"],
             client_secret=client_secret,

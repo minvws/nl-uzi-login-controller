@@ -1,6 +1,6 @@
 import time
 from urllib.parse import urlencode
-from typing import Dict
+from typing import Dict, Optional
 
 import logging
 import requests
@@ -102,26 +102,33 @@ class OidcService:
     def _check_and_update_provider_discovery(self, oidc_provider_name: str) -> None:
         oidc_provider_config = self._oidc_providers_config[oidc_provider_name]
         if not oidc_provider_config.discovery:
-            well_known_url = "".join(
+            provider_well_known_url = "".join(
                 [oidc_provider_config.issuer_url, "/.well-known/openid-configuration"]
             )
-            successful_update = False
-            counter = 1
-            while not successful_update and counter < 1000:
-                try:
-                    data = requests.get(
-                        well_known_url, timeout=self._http_timeout, verify=False
-                    )
-                    well_known_config = OIDCProviderDiscovery(**data.json())
-                    self._oidc_providers_config[
-                        oidc_provider_name
-                    ].discovery = well_known_config
-                    logging.info(
-                        "%s discovery config has been updated successfully",
-                        oidc_provider_name,
-                    )
-                    successful_update = True
-                except requests.ConnectionError:
-                    logging.error("request to %s failed", well_known_url)
-                    time.sleep(1)
-                    counter += 1
+            oidc_provider_discovery = self._fetch_oidc_provider_discovery_config(
+                provider_well_known_url, 1000
+            )
+            self._oidc_providers_config[
+                oidc_provider_name
+            ].discovery = oidc_provider_discovery
+
+    def _fetch_oidc_provider_discovery_config(
+        self, provider_well_known_url: str, nb_of_retries: int
+    ) -> Optional[OIDCProviderDiscovery]:
+        retries = 1
+        while retries < nb_of_retries:
+            try:
+                data = requests.get(
+                    provider_well_known_url, timeout=self._http_timeout, verify=False
+                )
+                provider_discovery = OIDCProviderDiscovery(**data.json())
+                return provider_discovery
+            except requests.ConnectionError:
+                logging.error(
+                    "request to %s failed, reattempting to connect number %s",
+                    provider_well_known_url,
+                    retries,
+                )
+                time.sleep(1)
+                retries += 1
+        return None

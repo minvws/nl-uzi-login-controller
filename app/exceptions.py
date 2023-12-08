@@ -27,6 +27,7 @@ class IrmaSessionNotCompleted(Exception):
         super().__init__("Irma session not completed")
 
 
+
 async def general_exception_handler(
     _request: Request, _exception: Exception
 ) -> JSONResponse:

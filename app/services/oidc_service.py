@@ -3,9 +3,13 @@ from typing import Dict
 import requests
 from fastapi.exceptions import RequestValidationError
 from starlette.responses import RedirectResponse
-from app.exceptions.general import GeneralServerException
+from app.exceptions import (
+    ProviderConfigNotFound,
+    ProviderNotFound,
+    ClientScopeException,
+)
 from app.models.oidc import OIDCProvider, OIDCProviderDiscovery
-from app.utils import nonce, json_fetch_url
+from app.utils import nonce, json_fetch_url, validate_response
 from app.services.jwt_service import JwtService
 
 
@@ -31,17 +35,16 @@ class OidcService:
         code_challenge: str,
         oidc_state: str,
     ) -> RedirectResponse:
-        provider = self._get_oidc_provder(oidc_provider_name)
+        provider = self._get_oidc_provider(oidc_provider_name)
         if provider.well_known_configuration is None:
-            raise GeneralServerException()
+            raise ProviderConfigNotFound()
 
         client_id = self._oidc_providers[oidc_provider_name].client_id
         client_scopes = self._oidc_providers[oidc_provider_name].client_scopes
 
         for scope in client_scopes:
             if scope not in provider.well_known_configuration.scopes_supported:
-                # TODO: FS add HTTP exceptions to the application
-                raise GeneralServerException()
+                raise ClientScopeException()
 
         params = {
             "client_id": client_id,
@@ -90,6 +93,7 @@ class OidcService:
             data=data,
             verify=self._oidc_providers[oidc_provider_name].verify_ssl,
         )
+        validate_response(resp.status_code)
 
         resp = requests.get(
             oidc_provider.userinfo_endpoint,  # type: ignore
@@ -97,23 +101,26 @@ class OidcService:
             headers={"Authorization": "Bearer " + resp.json()["access_token"]},
             verify=self._oidc_providers[oidc_provider_name].verify_ssl,
         )
+        validate_response(resp.status_code)
+
         if resp.headers["Content-Type"] != "application/jwt":
             raise RequestValidationError("Unsupported media type")
         return resp.text
 
-    def _get_oidc_provder(self, oidc_provider_name) -> OIDCProvider:
+    def _get_oidc_provider(self, oidc_provider_name: str) -> OIDCProvider:
         if oidc_provider_name in self._oidc_providers:
             provider = self._oidc_providers[oidc_provider_name]
             if provider.well_known_configuration is None:
                 self._update_provider_discovery(provider)
             return provider
-        # Add providernotfoudn exception
-        raise GeneralServerException()
+        raise ProviderNotFound()
 
     def _update_provider_discovery(self, oidc_provider: OIDCProvider) -> None:
         well_known_url = "".join(
             [oidc_provider.issuer_url, "/.well-known/openid-configuration"]
         )
         oidc_provider.well_known_configuration = OIDCProviderDiscovery(
-            **json_fetch_url(well_known_url, self._http_retries)
+            **json_fetch_url(
+                well_known_url, self._http_retries, oidc_provider.verify_ssl
+            )
         )

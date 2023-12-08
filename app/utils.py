@@ -13,6 +13,7 @@ from jwcrypto.jwk import JWK
 import requests
 
 from app.models.oidc import OIDCProvider
+from app.exceptions import ServiceNotFound
 
 config = ConfigParser()
 config.read("app.conf")
@@ -72,12 +73,18 @@ def enforce_cert_newlines(cert_data: str) -> str:
     )
 
 
-def json_fetch_url(url: str, retries: int = 0) -> Any:
+def validate_response(status_code: int) -> Any:
+    if status_code >= 400:
+        raise ServiceNotFound()
+
+
+def json_fetch_url(url: str, retries: int = 0, verify_ssl: bool = False) -> Any:
     retry = 0
     while retry <= retries:
         try:
-            data = requests.get(url, timeout=HTTP_TIMEOUT, verify=False)
-            return data.json()
+            response = requests.get(url, timeout=HTTP_TIMEOUT, verify=verify_ssl)
+            validate_response(response.status_code)
+            return response.json()
         except requests.ConnectionError:
             time.sleep(1)
             retry += 1
@@ -93,7 +100,7 @@ def load_oidc_well_known_config(
         provider_config_url = "".join(
             [provider["issuer"], "/.well-known/openid-configuration"]
         )
-        discovery = json_fetch_url(provider_config_url)
+        discovery = json_fetch_url(provider_config_url, 2, provider["verify_ssl"])
 
         client_secret = (
             provider["client_secret"] if "client_secret" in provider else None

@@ -22,12 +22,14 @@ class OidcService:
         redirect_uri: str,
         http_timeout: int,
         http_retries: int,
+        http_backof_time: int,
     ):
         self._redirect_uri = redirect_uri
         self._http_timeout = http_timeout
         self._oidc_providers = oidc_providers
         self._jwt_service = jwt_service
         self._http_retries = http_retries
+        self._http_backof_time = http_backof_time
 
     def get_authorize_response(
         self,
@@ -121,6 +123,9 @@ class OidcService:
         )
         oidc_provider.well_known_configuration = OIDCProviderDiscovery(
             **json_fetch_url(
-                well_known_url, self._http_retries, oidc_provider.verify_ssl
+                well_known_url,
+                self._http_backof_time,
+                self._http_retries,
+                oidc_provider.verify_ssl,
             )
         )

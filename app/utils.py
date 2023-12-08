@@ -78,7 +78,9 @@ def validate_response(status_code: int) -> Any:
         raise ServiceNotFound()
 
 
-def json_fetch_url(url: str, retries: int = 0, verify_ssl: bool = False) -> Any:
+def json_fetch_url(
+    url: str, backof_time: int = 5, retries: int = 0, verify_ssl: bool = False
+) -> Any:
     retry = 0
     while retry <= retries:
         try:
@@ -86,7 +88,7 @@ def json_fetch_url(url: str, retries: int = 0, verify_ssl: bool = False) -> Any:
             validate_response(response.status_code)
             return response.json()
         except requests.ConnectionError:
-            time.sleep(1)
+            time.sleep(backof_time ^ (retry + 1))
             retry += 1
 
 

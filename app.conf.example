@@ -7,6 +7,8 @@ mock_enabled = False
 jwt_priv_key_path = secrets/nl-uzi-login-controller.key
 jwt_crt_path = secrets/nl-uzi-login-controller.crt
 http_timeout = 30
+http_retries = 20
+http_backof_time = 5
 
 [session]
 jwt_issuer=nl-rdo-max-private
@@ -57,4 +59,4 @@ key_file = server.key
 config_list_path=oidc-providers-list.json
 redirect_uri = http://localhost:8001/login/oidc/callback
 jwt_pub_key_path = secrets/nl-rdo-uzipoc-oidc-provider.pub
-http_retries = 20
+

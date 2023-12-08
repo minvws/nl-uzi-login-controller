@@ -15,13 +15,12 @@ from jwcrypto.jwk import JWK
 from starlette.responses import RedirectResponse, Response
 from starlette.templating import Jinja2Templates
 
-from app.exceptions import (
+from app.exceptions.irma import (
     IrmaSessionExpired,
     IrmaSessionNotCompleted,
     IrmaServerException,
-    GeneralServerException,
-    InvalidStateException,
 )
+from app.exceptions.general import GeneralServerException
 from app.models.session import Session, SessionType, SessionStatus, SessionLoa
 from app.services.irma_service import IrmaService
 from app.services.jwt_service import JwtService

@@ -4,7 +4,7 @@ from typing import Dict, List
 
 import requests
 
-from app.exceptions import (
+from app.exceptions.irma import (
     IrmaServerException,
 )
 

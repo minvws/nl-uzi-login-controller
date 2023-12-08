@@ -3,7 +3,7 @@ from typing import Dict
 import requests
 from fastapi.exceptions import RequestValidationError
 from starlette.responses import RedirectResponse
-from app.exceptions import GeneralServerException
+from app.exceptions.general import GeneralServerException
 from app.models.oidc import OIDCProvider, OIDCProviderDiscovery
 from app.utils import nonce, json_fetch_url
 from app.services.jwt_service import JwtService
@@ -100,28 +100,6 @@ class OidcService:
         if resp.headers["Content-Type"] != "application/jwt":
             raise RequestValidationError("Unsupported media type")
         return resp.text
-
-    # def _get_oidc_provider_well_known_config(
-    #     self, oidc_provider_name: str
-    # ) -> OIDCProviderDiscovery:
-    #     provider = self._oidc_providers[oidc_provider_name].well_known_configuration
-    #     if not provider:
-    #         raise GeneralServerException()
-    #
-    #     return provider
-
-    # def _check_and_update_provider_discovery(self, oidc_provider_name: str) -> None:
-    #     oidc_provider = self._oidc_providers[oidc_provider_name]
-    #     if not oidc_provider.well_known_configuration:
-    #         well_known_url = "".join(
-    #             [oidc_provider.issuer_url, "/.well-known/openid-configuration"]
-    #         )
-    #         provider_discovery = OIDCProviderDiscovery(
-    #             **json_fetch_url(well_known_url, self._http_retries)
-    #         )
-    #         self._oidc_providers[
-    #             oidc_provider_name
-    #         ].well_known_configuration = provider_discovery
 
     def _get_oidc_provder(self, oidc_provider_name) -> OIDCProvider:
         if oidc_provider_name in self._oidc_providers:

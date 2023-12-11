@@ -102,8 +102,6 @@ def load_oidc_well_known_config(
         provider_config_url = "".join(
             [provider["issuer"], "/.well-known/openid-configuration"]
         )
-        discovery = json_fetch_url(provider_config_url, 2, provider["verify_ssl"])
-
         client_secret = (
             provider["client_secret"] if "client_secret" in provider else None
         )
@@ -112,6 +110,7 @@ def load_oidc_well_known_config(
             if "verify_ssl" in provider
             else True
         )
+        discovery = json_fetch_url(provider_config_url, 2, provider["verify_ssl"])
 
         provider_data = OIDCProvider(
             verify_ssl=verify_ssl,

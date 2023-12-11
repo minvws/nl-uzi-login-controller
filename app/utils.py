@@ -82,14 +82,17 @@ def json_fetch_url(
     url: str, backof_time: int = 5, retries: int = 0, verify_ssl: bool = False
 ) -> Any:
     retry = 0
+    previous_exception = None
     while retry <= retries:
         try:
             response = requests.get(url, timeout=HTTP_TIMEOUT, verify=verify_ssl)
             validate_response_code(response.status_code)
             return response.json()
-        except requests.ConnectionError:
+        except requests.ConnectionError as request_exception:
+            previous_exception = request_exception
             time.sleep(backof_time ^ (retry + 1))
             retry += 1
+    raise previous_exception
 
 
 def load_oidc_well_known_config(
@@ -110,7 +113,11 @@ def load_oidc_well_known_config(
             if "verify_ssl" in provider
             else True
         )
-        discovery = json_fetch_url(provider_config_url, 2, provider["verify_ssl"])
+        discovery = None
+        try:
+            discovery = json_fetch_url(provider_config_url, 2, provider["verify_ssl"])
+        except Exception:
+            pass
 
         provider_data = OIDCProvider(
             verify_ssl=verify_ssl,

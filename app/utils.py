@@ -92,7 +92,9 @@ def json_fetch_url(
             previous_exception = request_exception
             time.sleep(backof_time ^ (retry + 1))
             retry += 1
-    raise previous_exception
+
+    if isinstance(previous_exception, BaseException):
+        raise previous_exception
 
 
 def load_oidc_well_known_config(
@@ -116,7 +118,7 @@ def load_oidc_well_known_config(
         discovery = None
         try:
             discovery = json_fetch_url(provider_config_url, 2, provider["verify_ssl"])
-        except Exception:
+        except requests.ConnectionError:
             pass
 
         provider_data = OIDCProvider(

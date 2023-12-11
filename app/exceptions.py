@@ -43,12 +43,8 @@ class ClientScopeException(Exception):
 
 
 class UnexpectedResponseCode(Exception):
-    """
-    The Whoops Exception
-    """
-
     def __init__(self) -> None:
-        super().__init__("Whoops!! Service not found")
+        super().__init__("Unexpected code received")
 
 
 async def general_exception_handler(

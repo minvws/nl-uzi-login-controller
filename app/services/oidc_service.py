@@ -9,7 +9,7 @@ from app.exceptions import (
     ClientScopeException,
 )
 from app.models.oidc import OIDCProvider, OIDCProviderDiscovery
-from app.utils import nonce, json_fetch_url, validate_response
+from app.utils import nonce, json_fetch_url, validate_response_code
 from app.services.jwt_service import JwtService
 
 
@@ -95,7 +95,7 @@ class OidcService:
             data=data,
             verify=self._oidc_providers[oidc_provider_name].verify_ssl,
         )
-        validate_response(resp.status_code)
+        validate_response_code(resp.status_code)
 
         resp = requests.get(
             oidc_provider.userinfo_endpoint,  # type: ignore
@@ -103,7 +103,7 @@ class OidcService:
             headers={"Authorization": "Bearer " + resp.json()["access_token"]},
             verify=self._oidc_providers[oidc_provider_name].verify_ssl,
         )
-        validate_response(resp.status_code)
+        validate_response_code(resp.status_code)
 
         if resp.headers["Content-Type"] != "application/jwt":
             raise RequestValidationError("Unsupported media type")

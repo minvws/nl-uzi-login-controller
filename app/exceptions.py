@@ -42,7 +42,7 @@ class ClientScopeException(Exception):
         super().__init__("Client scope is not supported")
 
 
-class ServiceNotFound(Exception):
+class UnexpectedResponseCode(Exception):
     """
     The Whoops Exception
     """

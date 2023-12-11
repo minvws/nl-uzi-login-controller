@@ -13,7 +13,7 @@ from jwcrypto.jwk import JWK
 import requests
 
 from app.models.oidc import OIDCProvider
-from app.exceptions import ServiceNotFound
+from app.exceptions import UnexpectedResponseCode
 
 config = ConfigParser()
 config.read("app.conf")
@@ -73,9 +73,9 @@ def enforce_cert_newlines(cert_data: str) -> str:
     )
 
 
-def validate_response(status_code: int) -> Any:
+def validate_response_code(status_code: int) -> Any:
     if status_code >= 400:
-        raise ServiceNotFound()
+        raise UnexpectedResponseCode()
 
 
 def json_fetch_url(
@@ -85,7 +85,7 @@ def json_fetch_url(
     while retry <= retries:
         try:
             response = requests.get(url, timeout=HTTP_TIMEOUT, verify=verify_ssl)
-            validate_response(response.status_code)
+            validate_response_code(response.status_code)
             return response.json()
         except requests.ConnectionError:
             time.sleep(backof_time ^ (retry + 1))

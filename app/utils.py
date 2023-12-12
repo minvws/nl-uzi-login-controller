@@ -9,7 +9,6 @@ from configparser import ConfigParser
 from Cryptodome.IO import PEM
 from Cryptodome.Hash import SHA256
 from jwcrypto.jwk import JWK
-
 import requests
 
 from app.models.oidc import OIDCProvider
@@ -79,7 +78,7 @@ def validate_response_code(status_code: int) -> Any:
 
 
 def json_fetch_url(
-    url: str, backof_time: int = 5, retries: int = 0, verify_ssl: bool = False
+    url: str, backof_time: int = 0, retries: int = 0, verify_ssl: bool = False
 ) -> Any:
     retry = 0
     previous_exception = None
@@ -117,7 +116,9 @@ def load_oidc_well_known_config(
         )
         discovery = None
         try:
-            discovery = json_fetch_url(provider_config_url, 2, provider["verify_ssl"])
+            discovery = json_fetch_url(
+                url=provider_config_url, verify_ssl=provider["verify_ssl"]
+            )
         except requests.ConnectionError:
             pass
 

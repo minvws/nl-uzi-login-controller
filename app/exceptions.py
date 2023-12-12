@@ -38,13 +38,15 @@ class ProviderConfigNotFound(Exception):
 
 
 class ClientScopeException(Exception):
-    def __init__(self) -> None:
-        super().__init__("Client scope is not supported")
+    def __init__(self, scope: str) -> None:
+        self.scope = scope
+        super().__init__(f"Client scope is not supported {scope}")
 
 
 class UnexpectedResponseCode(Exception):
-    def __init__(self) -> None:
-        super().__init__("Unexpected code received")
+    def __init__(self, status_code: int) -> None:
+        self.status_code = status_code
+        super().__init__(f"Unexpected code received: {self.status_code}")
 
 
 async def general_exception_handler(

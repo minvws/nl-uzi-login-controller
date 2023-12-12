@@ -75,7 +75,7 @@ def enforce_cert_newlines(cert_data: str) -> str:
 
 def validate_response_code(status_code: int) -> Any:
     if status_code >= 400:
-        raise UnexpectedResponseCode()
+        raise UnexpectedResponseCode(status_code)
 
 
 def json_fetch_url(

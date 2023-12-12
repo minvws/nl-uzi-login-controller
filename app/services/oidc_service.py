@@ -1,4 +1,3 @@
-from urllib.parse import urlencode
 from typing import Dict
 import requests
 from fastapi.exceptions import RequestValidationError
@@ -9,6 +8,7 @@ from app.exceptions import (
     ClientScopeException,
 )
 from app.models.oidc import OIDCProvider, OIDCProviderDiscovery
+from app.models.authorization_params import AuthorizationParams
 from app.utils import nonce, json_fetch_url, validate_response_code
 from app.services.jwt_service import JwtService
 
@@ -50,21 +50,19 @@ class OidcService:
         if unsupported_scopes:
             raise ClientScopeException(unsupported_scopes)
 
-        params = {
-            "client_id": client_id,
-            "response_type": "code",
-            "scope": " ".join(self._oidc_providers[oidc_provider_name].client_scopes),
-            "redirect_uri": self._redirect_uri,
-            "state": oidc_state,
-            "nonce": nonce(50),
-            "code_challenge_method": "S256",
-            "code_challenge": code_challenge,
-        }
-        url = (
-            provider.well_known_configuration.authorization_endpoint
-            + "?"
-            + urlencode(params)
+        params = AuthorizationParams(
+            client_id=client_id,
+            response_type="code",
+            scope=" ".join(self._oidc_providers[oidc_provider_name].client_scopes),
+            redirect_uri=self._redirect_uri,
+            state=oidc_state,
+            nonce=nonce(50),
+            code_challenge_method="S256",
+            code_challenge=code_challenge,
         )
+
+        url = self._update_and_get_authorization_url(oidc_provider_name, params)
+
         return RedirectResponse(
             url=url,
             status_code=303,
@@ -110,6 +108,23 @@ class OidcService:
         if resp.headers["Content-Type"] != "application/jwt":
             raise RequestValidationError("Unsupported media type")
         return resp.text
+
+    def _update_and_get_authorization_url(
+        self, oidc_provider_name: str, params: AuthorizationParams
+    ) -> str:
+        provider = self._get_oidc_provider(oidc_provider_name)
+        if isinstance(provider.well_known_configuration, OIDCProviderDiscovery):
+            updated_url = (
+                provider.well_known_configuration.authorization_endpoint
+                + "?"
+                + params.to_url_encoded()
+            )
+
+            self._oidc_providers[oidc_provider_name].well_known_configuration.authorization_endpoint = updated_url  # type: ignore
+
+            return updated_url
+
+        raise ProviderNotFound()
 
     def _get_oidc_provider(self, oidc_provider_name: str) -> OIDCProvider:
         if oidc_provider_name in self._oidc_providers:

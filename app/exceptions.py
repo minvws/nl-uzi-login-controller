@@ -1,6 +1,8 @@
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
+from typing import List
+
 
 class InvalidStateException(Exception):
     def __init__(self) -> None:
@@ -38,9 +40,9 @@ class ProviderConfigNotFound(Exception):
 
 
 class ClientScopeException(Exception):
-    def __init__(self, scope: str) -> None:
-        self.scope = scope
-        super().__init__(f"Client scope is not supported {scope}")
+    def __init__(self, unsupported_scopes: List[str]) -> None:
+        self.unsupported_scopes = " ".join(unsupported_scopes)
+        super().__init__(f"Client scope is not supported: {self.unsupported_scopes}")
 
 
 class UnexpectedResponseCode(Exception):

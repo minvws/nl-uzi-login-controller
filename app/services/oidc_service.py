@@ -44,10 +44,9 @@ class OidcService:
         client_id = self._oidc_providers[oidc_provider_name].client_id
         client_scopes = self._oidc_providers[oidc_provider_name].client_scopes
 
-        for scope in client_scopes:
-            print(scope)
-            if scope not in provider.well_known_configuration.scopes_supported:
-                raise ClientScopeException(scope)
+        unsupported_scopes = list(set(client_scopes) - set(provider.well_known_configuration.scopes_supported))
+        if unsupported_scopes:
+            raise ClientScopeException(unsupported_scopes)
 
         params = {
             "client_id": client_id,

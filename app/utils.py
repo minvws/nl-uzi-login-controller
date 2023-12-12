@@ -90,8 +90,8 @@ def json_fetch_url(
             return response.json()
         except requests.ConnectionError as request_exception:
             previous_exception = request_exception
-            time.sleep(backof_time ^ (retry + 1))
             retry += 1
+            time.sleep(backof_time ^ retry)
 
     if isinstance(previous_exception, BaseException):
         raise previous_exception

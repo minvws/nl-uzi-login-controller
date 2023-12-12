@@ -44,7 +44,9 @@ class OidcService:
         client_id = self._oidc_providers[oidc_provider_name].client_id
         client_scopes = self._oidc_providers[oidc_provider_name].client_scopes
 
-        unsupported_scopes = list(set(client_scopes) - set(provider.well_known_configuration.scopes_supported))
+        unsupported_scopes = list(
+            set(client_scopes) - set(provider.well_known_configuration.scopes_supported)
+        )
         if unsupported_scopes:
             raise ClientScopeException(unsupported_scopes)
 

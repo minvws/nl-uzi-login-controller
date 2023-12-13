@@ -41,8 +41,8 @@ class OidcService:
         if provider.well_known_configuration is None:
             raise ProviderConfigNotFound()
 
-        client_id = self._oidc_providers[oidc_provider_name].client_id
-        client_scopes = self._oidc_providers[oidc_provider_name].client_scopes
+        client_id = provider.client_id
+        client_scopes = provider.client_scopes
 
         unsupported_scopes = list(
             set(client_scopes) - set(provider.well_known_configuration.scopes_supported)
@@ -53,7 +53,7 @@ class OidcService:
         params = AuthorizationParams(
             client_id=client_id,
             response_type="code",
-            scope=" ".join(self._oidc_providers[oidc_provider_name].client_scopes),
+            scope=" ".join(provider.client_scopes),
             redirect_uri=self._redirect_uri,
             state=oidc_state,
             nonce=nonce(50),
@@ -71,12 +71,10 @@ class OidcService:
     def get_userinfo(
         self, oidc_provider_name: str, code: str, code_verifier: str
     ) -> str:
-        # TODO GB: error handling
-        oidc_provider = self._oidc_providers[
-            oidc_provider_name
-        ].well_known_configuration
-        client_id = self._oidc_providers[oidc_provider_name].client_id
-        client_secret = self._oidc_providers[oidc_provider_name].client_secret
+        provider = self._oidc_providers[oidc_provider_name]
+        provider_well_known_config = provider.well_known_configuration
+        client_id = provider.client_id
+        client_secret = provider.client_secret
 
         data = {
             "code": code,
@@ -90,7 +88,7 @@ class OidcService:
             data["client_secret"] = client_secret
 
         resp = requests.post(
-            oidc_provider.token_endpoint,  # type: ignore
+            provider_well_known_config.token_endpoint,  # type: ignore
             timeout=self._http_timeout,
             data=data,
             verify=self._oidc_providers[oidc_provider_name].verify_ssl,
@@ -98,7 +96,7 @@ class OidcService:
         validate_response_code(resp.status_code)
 
         resp = requests.get(
-            oidc_provider.userinfo_endpoint,  # type: ignore
+            provider_well_known_config.userinfo_endpoint,  # type: ignore
             timeout=self._http_timeout,
             headers={"Authorization": "Bearer " + resp.json()["access_token"]},
             verify=self._oidc_providers[oidc_provider_name].verify_ssl,
@@ -120,7 +118,10 @@ class OidcService:
                 + params.to_url_encoded()
             )
 
-            self._oidc_providers[oidc_provider_name].well_known_configuration.authorization_endpoint = updated_url  # type: ignore
+            if self._oidc_providers[oidc_provider_name].well_known_configuration:
+                self._oidc_providers[  # type: ignore
+                    oidc_provider_name
+                ].well_known_configuration.authorization_endpoint = updated_url
 
             return updated_url
 

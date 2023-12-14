@@ -1,3 +1,4 @@
+import random
 import textwrap
 import base64
 import json
@@ -11,7 +12,7 @@ from Cryptodome.Hash import SHA256
 from jwcrypto.jwk import JWK
 import requests
 
-from app.models.oidc import OIDCProvider
+from app.models.oidc_provider import OIDCProvider
 from app.exceptions import UnexpectedResponseCode
 
 config = ConfigParser()
@@ -84,13 +85,14 @@ def json_fetch_url(
     previous_exception = None
     while retry <= retries:
         try:
+            if retry > 0:
+                time.sleep(backof_time + random.randint(1,3) ^ retry)
             response = requests.get(url, timeout=HTTP_TIMEOUT, verify=verify_ssl)
             validate_response_code(response.status_code)
             return response.json()
         except requests.ConnectionError as request_exception:
             previous_exception = request_exception
             retry += 1
-            time.sleep(backof_time ^ retry)
 
     if isinstance(previous_exception, BaseException):
         raise previous_exception

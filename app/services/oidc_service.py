@@ -7,7 +7,7 @@ from app.exceptions import (
     ProviderNotFound,
     ClientScopeException,
 )
-from app.models.oidc import OIDCProvider, OIDCProviderDiscovery
+from app.models.oidc_provider import OIDCProvider, OIDCProviderDiscovery
 from app.models.authorization_params import AuthorizationParams
 from app.utils import nonce, json_fetch_url, validate_response_code
 from app.services.jwt_service import JwtService

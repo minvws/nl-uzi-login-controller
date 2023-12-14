@@ -60,7 +60,6 @@ class OidcService:
             code_challenge_method="S256",
             code_challenge=code_challenge,
         )
-
         url = self._update_and_get_authorization_url(oidc_provider_name, params)
 
         return RedirectResponse(
@@ -71,7 +70,7 @@ class OidcService:
     def get_userinfo(
         self, oidc_provider_name: str, code: str, code_verifier: str
     ) -> str:
-        provider = self._oidc_providers[oidc_provider_name]
+        provider = self._get_oidc_provider(oidc_provider_name)
         provider_well_known_config = provider.well_known_configuration
         client_id = provider.client_id
         client_secret = provider.client_secret
@@ -91,7 +90,7 @@ class OidcService:
             provider_well_known_config.token_endpoint,  # type: ignore
             timeout=self._http_timeout,
             data=data,
-            verify=self._oidc_providers[oidc_provider_name].verify_ssl,
+            verify=provider.verify_ssl,
         )
         validate_response_code(resp.status_code)
 
@@ -99,7 +98,7 @@ class OidcService:
             provider_well_known_config.userinfo_endpoint,  # type: ignore
             timeout=self._http_timeout,
             headers={"Authorization": "Bearer " + resp.json()["access_token"]},
-            verify=self._oidc_providers[oidc_provider_name].verify_ssl,
+            verify=provider.verify_ssl,
         )
         validate_response_code(resp.status_code)
 
@@ -117,12 +116,7 @@ class OidcService:
                 + "?"
                 + params.to_url_encoded()
             )
-
-            if self._oidc_providers[oidc_provider_name].well_known_configuration:
-                self._oidc_providers[  # type: ignore
-                    oidc_provider_name
-                ].well_known_configuration.authorization_endpoint = updated_url
-
+            provider.well_known_configuration.authorization_endpoint = updated_url
             return updated_url
 
         raise ProviderNotFound()

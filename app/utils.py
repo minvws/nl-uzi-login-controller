@@ -86,7 +86,7 @@ def json_fetch_url(
     while retry <= retries:
         try:
             if retry > 0:
-                time.sleep(backof_time + random.randint(1,3) ^ retry)
+                time.sleep(backof_time + random.randint(1, 3) ^ retry)
             response = requests.get(url, timeout=HTTP_TIMEOUT, verify=verify_ssl)
             validate_response_code(response.status_code)
             return response.json()

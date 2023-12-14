@@ -1,17 +1,19 @@
+import random
 import textwrap
 import base64
 import json
 import secrets
+import time
 from os import path
 from typing import Union, Any, Dict
 from configparser import ConfigParser
 from Cryptodome.IO import PEM
 from Cryptodome.Hash import SHA256
 from jwcrypto.jwk import JWK
-
 import requests
 
-from app.models.oidc import OIDCProviderConfiguration
+from app.models.oidc_provider import OIDCProvider
+from app.exceptions import UnexpectedResponseCode
 
 config = ConfigParser()
 config.read("app.conf")
@@ -71,9 +73,34 @@ def enforce_cert_newlines(cert_data: str) -> str:
     )
 
 
+def validate_response_code(status_code: int) -> Any:
+    if status_code >= 400:
+        raise UnexpectedResponseCode(status_code)
+
+
+def json_fetch_url(
+    url: str, backof_time: int = 0, retries: int = 0, verify_ssl: bool = False
+) -> Any:
+    retry = 0
+    previous_exception = None
+    while retry <= retries:
+        try:
+            if retry > 0:
+                time.sleep((backof_time + random.randint(1, 3)) ^ retry)
+            response = requests.get(url, timeout=HTTP_TIMEOUT, verify=verify_ssl)
+            validate_response_code(response.status_code)
+            return response.json()
+        except requests.ConnectionError as request_exception:
+            previous_exception = request_exception
+            retry += 1
+
+    if isinstance(previous_exception, BaseException):
+        raise previous_exception
+
+
 def load_oidc_well_known_config(
     providers_config_path: str, environment: str
-) -> Dict[str, OIDCProviderConfiguration]:
+) -> Dict[str, OIDCProvider]:
     providers = read_json(providers_config_path)
     well_known_configs = {}
 
@@ -81,10 +108,6 @@ def load_oidc_well_known_config(
         provider_config_url = "".join(
             [provider["issuer"], "/.well-known/openid-configuration"]
         )
-        response = requests.get(
-            provider_config_url, timeout=HTTP_TIMEOUT, verify=False
-        ).json()
-
         client_secret = (
             provider["client_secret"] if "client_secret" in provider else None
         )
@@ -93,10 +116,18 @@ def load_oidc_well_known_config(
             if "verify_ssl" in provider
             else True
         )
+        discovery = None
+        try:
+            discovery = json_fetch_url(
+                url=provider_config_url, verify_ssl=provider["verify_ssl"]
+            )
+        except requests.ConnectionError:
+            pass
 
-        provider_data = OIDCProviderConfiguration(
+        provider_data = OIDCProvider(
             verify_ssl=verify_ssl,
-            discovery=response,
+            well_known_configuration=discovery if discovery else None,
+            issuer_url=provider["issuer"],
             client_id=provider["client_id"],
             client_secret=client_secret,
             client_scopes=provider["scopes"],

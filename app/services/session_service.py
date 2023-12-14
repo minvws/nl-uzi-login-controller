@@ -16,10 +16,10 @@ from starlette.responses import RedirectResponse, Response
 from starlette.templating import Jinja2Templates
 
 from app.exceptions import (
+    GeneralServerException,
+    IrmaServerException,
     IrmaSessionExpired,
     IrmaSessionNotCompleted,
-    IrmaServerException,
-    GeneralServerException,
     InvalidStateException,
 )
 from app.models.session import Session, SessionType, SessionStatus, SessionLoa

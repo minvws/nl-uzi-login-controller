@@ -29,9 +29,7 @@ _redis_client = create_redis_client(config["redis"])
 
 # fetch and load providers
 providers_conf_path = config.get("oidc_provider", "config_list_path")
-providers_well_known_configs = load_oidc_well_known_config(
-    providers_conf_path, environment
-)
+oidc_providers = load_oidc_well_known_config(providers_conf_path, environment)
 
 jwt_service = JwtService(
     jwt_priv_key=jwt_priv_key, crt_kid=kid_from_certificate(jwt_crt_content)
@@ -45,10 +43,12 @@ irma_service = IrmaService(
 )
 
 oidc_service = OidcService(
-    oidc_providers_well_known_config=providers_well_known_configs,
+    oidc_providers=oidc_providers,
     redirect_uri=config["oidc_provider"]["redirect_uri"],
     http_timeout=config.getint("app", "http_timeout", fallback=30),
     jwt_service=jwt_service,
+    http_retries=config.getint("app", "http_retries", fallback=20),
+    http_backof_time=config.getint("app", "http_backof_time", fallback=5),
 )
 
 session_service_ = SessionService(

@@ -47,9 +47,12 @@ class OIDCProviderDiscovery(BaseModel):
     backchannel_logout_session_supported: Optional[bool]
 
 
-class OIDCProviderConfiguration(BaseModel):
+class OIDCProvider(BaseModel):
     client_id: str
     client_scopes: List[str]
-    discovery: OIDCProviderDiscovery = Field(None, alias="discovery")
+    well_known_configuration: Optional[OIDCProviderDiscovery] = Field(
+        None, alias="well_known_configuration"
+    )
+    issuer_url: str
     client_secret: Optional[str] = None
     verify_ssl: bool = True

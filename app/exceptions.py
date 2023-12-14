@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
@@ -25,6 +26,28 @@ class IrmaSessionExpired(Exception):
 class IrmaSessionNotCompleted(Exception):
     def __init__(self) -> None:
         super().__init__("Irma session not completed")
+
+
+class ProviderNotFound(Exception):
+    def __init__(self) -> None:
+        super().__init__("Provider not found")
+
+
+class ProviderConfigNotFound(Exception):
+    def __init__(self) -> None:
+        super().__init__("Provider well known configuration not found")
+
+
+class ClientScopeException(Exception):
+    def __init__(self, unsupported_scopes: List[str]) -> None:
+        self.unsupported_scopes = " ".join(unsupported_scopes)
+        super().__init__(f"Client scope is not supported: {self.unsupported_scopes}")
+
+
+class UnexpectedResponseCode(Exception):
+    def __init__(self, status_code: int) -> None:
+        self.status_code = status_code
+        super().__init__(f"Unexpected code received: {self.status_code}")
 
 
 async def general_exception_handler(

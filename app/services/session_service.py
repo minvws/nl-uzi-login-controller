@@ -1,12 +1,13 @@
 import json
 import logging
 import time
-from typing import Union
+from typing import Union, Optional
 import secrets
 import hashlib
 import base64
 
 from configparser import ConfigParser
+
 from fastapi.responses import JSONResponse
 from fastapi import Request, HTTPException
 from redis import Redis
@@ -47,8 +48,8 @@ class SessionService:
         self,
         redis_client: Redis,
         irma_service: IrmaService,
-        oidc_service: OidcService,
-        jwt_service: JwtService,
+        oidc_service: Optional[OidcService],
+        jwt_service: Optional[JwtService],
         irma_disclose_prefix: str,
         redis_namespace: str,
         expires_in_s: int,
@@ -56,7 +57,7 @@ class SessionService:
         jwt_issuer_crt_path: str,
         jwt_audience: str,
         mock_enabled: bool,
-        oidc_provider_pub_key: JWK,
+        oidc_provider_pub_key: Optional[JWK],
         session_server_events_enabled: bool = False,
         session_server_events_timeout: int = 2000,
         session_polling_interval: int = 1000,
@@ -240,7 +241,14 @@ class SessionService:
         exchange_token: str,
         state: str,
         redirect_url: str,
-    ) -> Union[RedirectResponse, HTTPException]:
+    ) -> Union[Response, HTTPException]:
+        # check if oidc_login_method_feature is enabled
+        if (
+            self._oidc_service is None
+            or self._oidc_provider_pub_key is None
+            or self._jwt_service is None
+        ):
+            return Response(status_code=404)
         session: Session = self._get_session_from_redis(exchange_token)
         oidc_provider_name = session.oidc_provider_name
         if not oidc_provider_name:
@@ -270,7 +278,14 @@ class SessionService:
 
     def login_oidc_callback(
         self, state: str, code: str
-    ) -> Union[RedirectResponse, HTTPException]:
+    ) -> Union[Response, HTTPException]:
+        # check if oidc_login_method_feature is enabled
+        if (
+            self._oidc_service is None
+            or self._oidc_provider_pub_key is None
+            or self._jwt_service is None
+        ):
+            return Response(status_code=404)
         login_state = self._get_login_state_from_redis(state)
         # TODO: FS Simplify the below assignment
         exchange_token = login_state.exchange_token

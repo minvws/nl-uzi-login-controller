@@ -116,7 +116,6 @@ class OidcService:
                 + "?"
                 + params.to_url_encoded()
             )
-            provider.well_known_configuration.authorization_endpoint = updated_url
             return updated_url
 
         raise ProviderNotFound()

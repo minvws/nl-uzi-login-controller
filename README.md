@@ -7,6 +7,11 @@ is to manage sessions for login methods exchanged through MAX for Uzi (Unieke zo
 * Uzi Pass
 * OpenID Connect
 
+The application is built with FastAPI, and consist primarily of two routers:
+
+* Login router: facing MAX managing the login methods requested from MAX.
+* Session router: facing external authentication services to fulfill the login flow and return the results
+
 # setup
 ```bash
 make setup

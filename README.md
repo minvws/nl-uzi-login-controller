@@ -1,3 +1,17 @@
+# System summary
+
+The login controller is a repository meant to be used alongside [Multiple Authentication eXchange](https://github.com/minvws/nl-rdo-max) (MAX). The purpose of this system 
+is to manage sessions for login methods exchanged through MAX for Uzi (Unieke zorgverlener identificatie). The main login methods managed are:
+
+* Yivi (formerly known as IRMA)
+* Uzi Pass
+* OpenID Connect
+
+The application is built with FastAPI, and consist primarily of two routers:
+
+* Login router: facing MAX managing the login methods requested from MAX.
+* Session router: facing external authentication services to fulfill the login flow and return the results
+
 # setup
 ```bash
 make setup

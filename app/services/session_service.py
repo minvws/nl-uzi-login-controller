@@ -287,11 +287,12 @@ class SessionService:
         ):
             return Response(status_code=404)
         login_state = self._get_login_state_from_redis(state)
-        # TODO: FS Simplify the below assignment
-        exchange_token = login_state.exchange_token
-        state = login_state.state
-        code_verifier = login_state.code_verifier
-        redirect_url = login_state.redirect_url
+        (
+            exchange_token,
+            state,
+            code_verifier,
+            redirect_url,
+        ) = login_state.to_dict().values()
 
         session = self._get_session_from_redis(exchange_token)
         if not session:

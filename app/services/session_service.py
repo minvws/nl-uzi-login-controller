@@ -311,7 +311,7 @@ class SessionService:
         claims = self._jwt_service.from_jwe(self._oidc_provider_pub_key, userinfo_jwt)
 
         session.session_status = SessionStatus.DONE
-        session.uzi_id = claims["signed_uzi_number"]
+        session.uzi_id = claims["signed_userinfo"]
         session.loa_authn = SessionLoa.HIGH
 
         self._redis_client.set(

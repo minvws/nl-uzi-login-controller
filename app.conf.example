@@ -10,7 +10,7 @@ jwt_priv_key_path = secrets/nl-uzi-login-controller.key
 # required when oidc_login_method_feature is enabled
 jwt_crt_path = secrets/nl-uzi-login-controller.crt
 
-# register certificate path, also rquired when oidc_login_method_feature is enabled
+# register certificate path, also required when oidc_login_method_feature is enabled
 register_api_crt_path = secrets/nl-uzipoc-register-api.crt
 
 http_timeout = 30

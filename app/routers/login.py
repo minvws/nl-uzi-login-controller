@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import Response, RedirectResponse
@@ -59,8 +59,16 @@ async def oidc_login(
 
 @router.get("/oidc/callback", response_model=None)
 async def callback_login(
-    state: str,
-    code: str,
+    state: Optional[str],
+    code: Optional[str],
+    error: Optional[str],
+    error_description: Optional[str],
     session_service: SessionService = Depends(lambda: session_service_),
 ) -> Union[Response, HTTPException]:
-    return session_service.login_oidc_callback(state, code)
+    if error is not None:
+        return session_service.fallback_error(error, error_description)
+
+    if (state is not None) and (code is not None):
+        return session_service.login_oidc_callback(state, code)
+
+    return session_service.fallback_error("invalid_request")

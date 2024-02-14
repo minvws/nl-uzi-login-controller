@@ -289,6 +289,7 @@ class SessionService:
             or self._jwt_service is None
         ):
             return Response(status_code=404)
+
         login_state = self._get_login_state_from_redis(state)
         (
             exchange_token,
@@ -330,6 +331,15 @@ class SessionService:
             url=f"{redirect_url}?state={state}&exchange_token={session.exchange_token}",
             status_code=303,
         )
+
+    def fallback_error(
+        self, error: str, error_description: Optional[str] = None
+    ) -> Response:
+        if self._oidc_service is not None:
+            return self._oidc_service.redirect_error(error, error_description)
+
+        # if oidc service is not available
+        return Response(status_code=404)
 
     def _get_session_from_redis(self, exchange_token: str) -> Session:
         session_str: Union[str, bytes] = self._redis_client.get(  # type: ignore

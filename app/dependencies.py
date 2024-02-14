@@ -28,11 +28,13 @@ oidc_login_method_feature = config.getboolean("app", "oidc_login_method_feature"
 OIDC_PROVIDER_PUB_KEY = None
 JWT_SERVICE = None
 OIDC_SERVICE = None
+REGISTER_API_CRT = None
 
 if oidc_login_method_feature:
     jwt_priv_key = load_jwk(config.get("app", "jwt_priv_key_path"))
     OIDC_PROVIDER_PUB_KEY = load_jwk(config.get("oidc_provider", "jwt_pub_key_path"))
     jwt_crt_content = file_content_raise_if_none(config.get("app", "jwt_crt_path"))
+    REGISTER_API_CRT = load_jwk(config.get("session", "register_api_crt_path"))
 
     # fetch and load providers
     providers_conf_path = config.get("oidc_provider", "config_list_path")
@@ -69,7 +71,7 @@ session_service_ = SessionService(
     jwt_issuer=config["session"]["jwt_issuer"],
     jwt_issuer_crt_path=config["session"]["jwt_issuer_crt_path"],
     jwt_audience=config["session"]["jwt_audience"],
-    register_api_crt_path=config["session"]["register_api_crt_path"] if oidc_login_method_feature else None,
+    register_api_crt=REGISTER_API_CRT,
     mock_enabled=config.getboolean("app", "mock_enabled"),
     oidc_provider_pub_key=OIDC_PROVIDER_PUB_KEY,
     session_server_events_enabled=config.getboolean(

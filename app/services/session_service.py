@@ -56,7 +56,7 @@ class SessionService:
         jwt_issuer: str,
         jwt_issuer_crt_path: str,
         jwt_audience: str,
-        register_api_crt_path: Optional[str],
+        register_api_crt: Optional[JWK],
         mock_enabled: bool,
         oidc_provider_pub_key: Optional[JWK],
         session_server_events_enabled: bool = False,
@@ -79,9 +79,7 @@ class SessionService:
         self._session_server_events_enabled = session_server_events_enabled
         self._session_server_events_timeout = session_server_events_timeout
         self._session_polling_interval = session_polling_interval
-        if register_api_crt_path is not None:
-            with open(register_api_crt_path, encoding="utf-8") as file:
-                self._register_crt = JWK.from_pem(file.read().encode("utf-8"))
+        self._register_api_crt = register_api_crt
 
     def create(self, raw_jwt: str) -> JSONResponse:
         jwt = JWT(
@@ -288,6 +286,7 @@ class SessionService:
             self._oidc_service is None
             or self._oidc_provider_pub_key is None
             or self._jwt_service is None
+            or self._register_api_crt is None
         ):
             return Response(status_code=404)
 
@@ -314,8 +313,9 @@ class SessionService:
             oidc_provider_name, code, code_verifier
         )
         claims = self._jwt_service.from_jwe(self._oidc_provider_pub_key, userinfo_jwt)
+
         signed_userinfo = self._jwt_service.from_jwt(
-            self._register_crt, claims["signed_userinfo"]
+            self._register_api_crt, claims["signed_userinfo"]
         )
 
         session.session_status = SessionStatus.DONE

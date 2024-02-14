@@ -69,6 +69,7 @@ session_service_ = SessionService(
     jwt_issuer=config["session"]["jwt_issuer"],
     jwt_issuer_crt_path=config["session"]["jwt_issuer_crt_path"],
     jwt_audience=config["session"]["jwt_audience"],
+    register_api_crt_path=config["session"]["register_api_crt_path"],
     mock_enabled=config.getboolean("app", "mock_enabled"),
     oidc_provider_pub_key=OIDC_PROVIDER_PUB_KEY,
     session_server_events_enabled=config.getboolean(

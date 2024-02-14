@@ -32,7 +32,9 @@ class JwtService:
     def create_jwe(self, jwe_enc_pub_key: JWK, payload: Dict[str, Any]) -> str:
         return create_jwe(self._jwt_priv_key, self._crt_kid, jwe_enc_pub_key, payload)
 
-    def from_jwt(self, jwt_pub_key: JWK, jwt: str, check_claims: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def from_jwt(
+        self, jwt_pub_key: JWK, jwt: str, check_claims: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         return from_jwt(jwt_pub_key, jwt, check_claims)
 
     def from_jwe(self, jwt_pub_key: JWK, jwe: str) -> Dict[str, Any]:

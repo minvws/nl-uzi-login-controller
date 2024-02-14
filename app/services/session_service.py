@@ -318,11 +318,9 @@ class SessionService:
         claims = self._jwt_service.from_jwe(self._oidc_provider_pub_key, userinfo_jwt)
 
         signed_userinfo = self._jwt_service.from_jwt(
-            self._register_api_crt, claims["signed_userinfo"], {
-                "iss": self._register_api_issuer,
-                "exp": time.time(),
-                "nbf": time.time()
-            }
+            self._register_api_crt,
+            claims["signed_userinfo"],
+            {"iss": self._register_api_issuer, "exp": time.time(), "nbf": time.time()},
         )
 
         session.session_status = SessionStatus.DONE

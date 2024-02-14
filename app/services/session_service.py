@@ -56,7 +56,7 @@ class SessionService:
         jwt_issuer: str,
         jwt_issuer_crt_path: str,
         jwt_audience: str,
-        register_api_crt_path: str,
+        register_api_crt_path: Optional[str],
         mock_enabled: bool,
         oidc_provider_pub_key: Optional[JWK],
         session_server_events_enabled: bool = False,
@@ -74,13 +74,14 @@ class SessionService:
         self._jwt_audience = jwt_audience
         with open(jwt_issuer_crt_path, encoding="utf-8") as file:
             self._jwt_issuer_crt_path = JWK.from_pem(file.read().encode("utf-8"))
-        with open(register_api_crt_path, encoding="utf-8") as file:
-            self._register_crt = JWK.from_pem(file.read().encode("utf-8"))
         self._mock_enabled = mock_enabled
         self._oidc_provider_pub_key = oidc_provider_pub_key
         self._session_server_events_enabled = session_server_events_enabled
         self._session_server_events_timeout = session_server_events_timeout
         self._session_polling_interval = session_polling_interval
+        if register_api_crt_path is not None:
+            with open(register_api_crt_path, encoding="utf-8") as file:
+                self._register_crt = JWK.from_pem(file.read().encode("utf-8"))
 
     def create(self, raw_jwt: str) -> JSONResponse:
         jwt = JWT(

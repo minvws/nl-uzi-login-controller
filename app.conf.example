@@ -10,9 +10,6 @@ jwt_priv_key_path = secrets/nl-uzi-login-controller.key
 # required when oidc_login_method_feature is enabled
 jwt_crt_path = secrets/nl-uzi-login-controller.crt
 
-# register certificate path, also required when oidc_login_method_feature is enabled
-register_api_crt_path = secrets/nl-uzipoc-register-api.crt
-
 http_timeout = 30
 http_retries = 20
 http_backof_time = 5
@@ -69,4 +66,6 @@ key_file = server.key
 config_list_path=oidc-providers-list.json
 redirect_uri = http://localhost:8001/login/oidc/callback
 jwt_pub_key_path = secrets/nl-rdo-uzipoc-oidc-provider.pub
-
+# register certificate path, also required when oidc_login_method_feature is enabled
+register_api_crt_path = secrets/nl-uzipoc-register-api.crt
+register_api_jwt_issuer = max

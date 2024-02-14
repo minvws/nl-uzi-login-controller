@@ -57,6 +57,7 @@ class SessionService:
         jwt_issuer_crt_path: str,
         jwt_audience: str,
         register_api_crt: Optional[JWK],
+        register_api_issuer: Optional[str],
         mock_enabled: bool,
         oidc_provider_pub_key: Optional[JWK],
         session_server_events_enabled: bool = False,
@@ -80,6 +81,7 @@ class SessionService:
         self._session_server_events_timeout = session_server_events_timeout
         self._session_polling_interval = session_polling_interval
         self._register_api_crt = register_api_crt
+        self._register_api_issuer = register_api_issuer
 
     def create(self, raw_jwt: str) -> JSONResponse:
         jwt = JWT(
@@ -312,10 +314,15 @@ class SessionService:
         userinfo_jwt = self._oidc_service.get_userinfo(
             oidc_provider_name, code, code_verifier
         )
+        # Todo: Use pubkey from OIDC Config
         claims = self._jwt_service.from_jwe(self._oidc_provider_pub_key, userinfo_jwt)
 
         signed_userinfo = self._jwt_service.from_jwt(
-            self._register_api_crt, claims["signed_userinfo"]
+            self._register_api_crt, claims["signed_userinfo"], {
+                "iss": self._register_api_issuer,
+                "exp": time.time(),
+                "nbf": time.time()
+            }
         )
 
         session.session_status = SessionStatus.DONE

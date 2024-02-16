@@ -56,6 +56,8 @@ class SessionService:
         jwt_issuer: str,
         jwt_issuer_crt_path: str,
         jwt_audience: str,
+        register_api_crt: Optional[JWK],
+        register_api_issuer: Optional[str],
         mock_enabled: bool,
         oidc_provider_pub_key: Optional[JWK],
         session_server_events_enabled: bool = False,
@@ -78,6 +80,8 @@ class SessionService:
         self._session_server_events_enabled = session_server_events_enabled
         self._session_server_events_timeout = session_server_events_timeout
         self._session_polling_interval = session_polling_interval
+        self._register_api_crt = register_api_crt
+        self._register_api_issuer = register_api_issuer
 
     def create(self, raw_jwt: str) -> JSONResponse:
         jwt = JWT(
@@ -284,8 +288,10 @@ class SessionService:
             self._oidc_service is None
             or self._oidc_provider_pub_key is None
             or self._jwt_service is None
+            or self._register_api_crt is None
         ):
             return Response(status_code=404)
+
         login_state = self._get_login_state_from_redis(state)
         (
             exchange_token,
@@ -308,10 +314,17 @@ class SessionService:
         userinfo_jwt = self._oidc_service.get_userinfo(
             oidc_provider_name, code, code_verifier
         )
+        # Todo: Use pubkey from OIDC Config JSON
         claims = self._jwt_service.from_jwe(self._oidc_provider_pub_key, userinfo_jwt)
 
+        signed_userinfo = self._jwt_service.from_jwt(
+            self._register_api_crt,
+            claims["signed_userinfo"],
+            {"iss": self._register_api_issuer, "exp": time.time(), "nbf": time.time()},
+        )
+
         session.session_status = SessionStatus.DONE
-        session.uzi_id = claims["signed_uzi_number"]
+        session.uzi_id = signed_userinfo["uzi_id"]
         session.loa_authn = SessionLoa.HIGH
 
         self._redis_client.set(
@@ -324,6 +337,15 @@ class SessionService:
             url=f"{redirect_url}?state={state}&exchange_token={session.exchange_token}",
             status_code=303,
         )
+
+    def fallback_error(
+        self, error: str, error_description: Optional[str] = None
+    ) -> Response:
+        if self._oidc_service is not None:
+            return self._oidc_service.redirect_error(error, error_description)
+
+        # if oidc service is not available
+        return Response(status_code=404)
 
     def _get_session_from_redis(self, exchange_token: str) -> Session:
         session_str: Union[str, bytes] = self._redis_client.get(  # type: ignore

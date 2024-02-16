@@ -1,7 +1,9 @@
-from typing import Dict
+from typing import Dict, Optional
+import urllib
 import requests
+
 from fastapi.exceptions import RequestValidationError
-from starlette.responses import RedirectResponse
+from starlette.responses import RedirectResponse, Response
 from app.exceptions import (
     ProviderConfigNotFound,
     ProviderNotFound,
@@ -105,6 +107,16 @@ class OidcService:
         if resp.headers["Content-Type"] != "application/jwt":
             raise RequestValidationError("Unsupported media type")
         return resp.text
+
+    def redirect_error(
+        self, error: str, error_description: Optional[str] = None
+    ) -> Response:
+        redirect_uri = (
+            f"{self._redirect_uri}?error={error}&error_description={urllib.parse.quote(error_description)}"
+            if error_description
+            else f"{self._redirect_uri}?error={error}"
+        )
+        return RedirectResponse(redirect_uri, status_code=400)
 
     def _update_and_get_authorization_url(
         self, oidc_provider_name: str, params: AuthorizationParams

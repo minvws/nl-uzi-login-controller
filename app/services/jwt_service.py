@@ -1,7 +1,7 @@
 import json
 import logging
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from cryptography.hazmat.primitives import hashes
 from jwcrypto.jwe import JWE
@@ -32,15 +32,23 @@ class JwtService:
     def create_jwe(self, jwe_enc_pub_key: JWK, payload: Dict[str, Any]) -> str:
         return create_jwe(self._jwt_priv_key, self._crt_kid, jwe_enc_pub_key, payload)
 
-    def from_jwt(self, jwt_pub_key: JWK, jwt: str) -> Dict[str, Any]:
-        return from_jwt(jwt_pub_key, jwt)
+    def from_jwt(
+        self, jwt_pub_key: JWK, jwt: str, check_claims: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        return from_jwt(jwt_pub_key, jwt, check_claims)
 
     def from_jwe(self, jwt_pub_key: JWK, jwe: str) -> Dict[str, Any]:
         return from_jwe(self._jwt_priv_key, jwt_pub_key, jwe)
 
 
-def from_jwt(jwt_pub_key: JWK, jwt_str: str) -> Dict[str, Any]:
-    jwt = JWT.from_jose_token(jwt_str)
+def from_jwt(
+    jwt_pub_key: JWK, jwt_str: str, check_claims: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    jwt = JWT(
+        jwt=jwt_str,
+        key=jwt_pub_key,
+        check_claims=check_claims,
+    )
     jwt.validate(jwt_pub_key)
     return json.loads(jwt.claims)
 

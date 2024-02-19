@@ -32,7 +32,7 @@ class RedirectBaseException(Exception, ABC):
         return (
             f"{self.base_redirect_url}?state={self.state}&error={self.error}&error_description={self.error_description}"
             if self.error_description
-            else f"{redirect_url}?state={self}&error={self.error}"
+            else f"{redirect_url}?state={self.state}&error={self.error}"
         )
 
 

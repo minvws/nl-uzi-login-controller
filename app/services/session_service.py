@@ -310,7 +310,7 @@ class SessionService:
         # Todo: Use pubkey from OIDC Config JSON
         claims = self._jwt_service.from_jwe(self._oidc_provider_pub_key, userinfo_jwt)
         if claims is None:
-            raise InvalidJWTException(state)
+            raise InvalidJWTException(state=state)
 
         signed_userinfo = self._jwt_service.from_jwt(
             self._register_api_crt,
@@ -318,7 +318,7 @@ class SessionService:
             {"iss": self._register_api_issuer, "exp": time.time(), "nbf": time.time()},
         )
         if signed_userinfo is None:
-            raise InvalidJWTException(state)
+            raise InvalidJWTException(state=state)
 
         session.session_status = SessionStatus.DONE
         session.uzi_id = signed_userinfo["uzi_id"]

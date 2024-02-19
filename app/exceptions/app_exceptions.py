@@ -6,7 +6,7 @@ from app.exceptions.oidc_error_constants import (
     INVALID_REQUEST,
     ACCESS_DENIED,
     INVALID_SCOPE,
-    SESSION_NOT_FOUND_ERROR
+    SESSION_NOT_FOUND_ERROR,
 )
 
 config = ConfigParser()
@@ -18,7 +18,6 @@ class RedirectBaseException(Exception, ABC):
 
     def __init__(
         self,
-        # redirect_url: str,
         error: str,
         state: str,
         error_description: Optional[str] = None,

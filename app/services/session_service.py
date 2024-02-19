@@ -33,8 +33,6 @@ from app.utils import rand_pass
 from app.models.login_state import LoginState
 
 REDIS_SESSION_KEY = "session"
-SESSION_NOT_FOUND_ERROR = "session%20not%20found"
-
 
 logger = logging.getLogger(__name__)
 config = ConfigParser()
@@ -299,10 +297,8 @@ class SessionService:
 
         session = self._get_session_from_redis(exchange_token)
         if not session:
-            return RedirectResponse(
-                url=f"{redirect_url}?state={state}&error={SESSION_NOT_FOUND_ERROR}",
-                status_code=403,
-            )
+            raise SessionNotFoundException(state)
+
         if not session.session_type == SessionType.OIDC:
             logger.warning("Session type is not OIDC")
             return HTTPException(status_code=404)

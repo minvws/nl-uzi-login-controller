@@ -309,7 +309,7 @@ class SessionService:
 
         oidc_provider_name: str = session.oidc_provider_name  # type: ignore
         userinfo_jwt = self._oidc_service.get_userinfo(
-            oidc_provider_name, code, code_verifier
+            oidc_provider_name, code, code_verifier, state
         )
         # Todo: Use pubkey from OIDC Config JSON
         claims = self._jwt_service.from_jwe(self._oidc_provider_pub_key, userinfo_jwt)

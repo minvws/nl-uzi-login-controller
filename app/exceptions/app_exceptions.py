@@ -2,7 +2,11 @@ from typing import List, Optional
 from abc import ABC
 from configparser import ConfigParser
 
-from app.exceptions.oidc_error_constants import INVALID_REQUEST, ACCESS_DENIED, INVALID_SCOPE
+from app.exceptions.oidc_error_constants import (
+    INVALID_REQUEST,
+    ACCESS_DENIED,
+    INVALID_SCOPE,
+)
 from app.exceptions.app_error_constatns import SESSION_NOT_FOUND_ERROR
 
 config = ConfigParser()
@@ -58,20 +62,11 @@ class IrmaSessionNotCompleted(Exception):
         super().__init__("Irma session not completed")
 
 
-class ProviderNotFound(Exception):
-    def __init__(self) -> None:
-        super().__init__("Provider not found")
-
-
-class ProviderConfigNotFound(Exception):
-    def __init__(self) -> None:
-        super().__init__("Provider well known configuration not found")
-
-
-class UnexpectedResponseCode(Exception):
-    def __init__(self, status_code: int) -> None:
-        self.status_code = status_code
-        super().__init__(f"Unexpected code received: {self.status_code}")
+class ProviderNotFound(RedirectBaseException):
+    def __init__(self, state: str) -> None:
+        super().__init__(
+            error=INVALID_REQUEST, error_description="Provider not found", state=state
+        )
 
 
 class ClientScopeException(RedirectBaseException):
@@ -80,11 +75,10 @@ class ClientScopeException(RedirectBaseException):
         super().__init__(
             error=INVALID_SCOPE,
             state=state,
-            error_description=f"Client scope is not supported: {self.unsupported_scopes}"
+            error_description=f"Client scope is not supported: {self.unsupported_scopes}",
         )
 
 
-# newly added exceptions
 class InvalidRequestException(RedirectBaseException):
     def __init__(self, state: str, error_description: Optional[str] = None) -> None:
         super().__init__(
@@ -99,3 +93,14 @@ class SessionNotFoundException(RedirectBaseException):
         super().__init__(
             error=ACCESS_DENIED, state=state, error_description=SESSION_NOT_FOUND_ERROR
         )
+
+
+class UnexpectedResponseCode(Exception):
+    def __init__(self, status_code: int) -> None:
+        self.status_code = status_code
+        super().__init__(f"Unexpected code received: {self.status_code}")
+
+
+class ProviderConfigNotFound(Exception):
+    def __init__(self) -> None:
+        super().__init__("Provider well known configuration not found")

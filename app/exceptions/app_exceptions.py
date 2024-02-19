@@ -37,29 +37,11 @@ class RedirectBaseException(Exception, ABC):
         )
 
 
-class InvalidStateException(Exception):
-    def __init__(self) -> None:
-        super().__init__("Invalid state")
-
-
-class GeneralServerException(Exception):
-    def __init__(self) -> None:
-        super().__init__("Unable to fetch response from Server")
-
-
-class IrmaServerException(Exception):
-    def __init__(self) -> None:
-        super().__init__("Unable to fetch response from IrmaServer")
-
-
-class IrmaSessionExpired(Exception):
-    def __init__(self) -> None:
-        super().__init__("Irma session expired")
-
-
-class IrmaSessionNotCompleted(Exception):
-    def __init__(self) -> None:
-        super().__init__("Irma session not completed")
+class InvalidStateException(RedirectBaseException):
+    def __init__(self, state: str) -> None:
+        super().__init__(
+            error=ACCESS_DENIED, error_description="Invalid state", state=state
+        )
 
 
 class ProviderNotFound(RedirectBaseException):
@@ -79,10 +61,10 @@ class ClientScopeException(RedirectBaseException):
         )
 
 
-class InvalidRequestException(RedirectBaseException):
+class InvalidJWTException(RedirectBaseException):
     def __init__(self, state: str, error_description: Optional[str] = None) -> None:
         super().__init__(
-            error=INVALID_REQUEST,
+            error=ACCESS_DENIED,
             error_description=error_description,
             state=state,
         )
@@ -104,3 +86,23 @@ class UnexpectedResponseCode(Exception):
 class ProviderConfigNotFound(Exception):
     def __init__(self) -> None:
         super().__init__("Provider well known configuration not found")
+
+
+class GeneralServerException(Exception):
+    def __init__(self) -> None:
+        super().__init__("Unable to fetch response from Server")
+
+
+class IrmaServerException(Exception):
+    def __init__(self) -> None:
+        super().__init__("Unable to fetch response from IrmaServer")
+
+
+class IrmaSessionExpired(Exception):
+    def __init__(self) -> None:
+        super().__init__("Irma session expired")
+
+
+class IrmaSessionNotCompleted(Exception):
+    def __init__(self) -> None:
+        super().__init__("Irma session not completed")

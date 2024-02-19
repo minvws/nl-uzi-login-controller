@@ -35,16 +35,16 @@ class JwtService:
 
     def from_jwt(
         self, jwt_pub_key: JWK, jwt: str, check_claims: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+    ) -> Optional[Dict[str, Any]]:
         return from_jwt(jwt_pub_key, jwt, check_claims)
 
-    def from_jwe(self, jwt_pub_key: JWK, jwe: str) -> Dict[str, Any]:
+    def from_jwe(self, jwt_pub_key: JWK, jwe: str) -> Optional[Dict[str, Any]]:
         return from_jwe(self._jwt_priv_key, jwt_pub_key, jwe)
 
 
 def from_jwt(
     jwt_pub_key: JWK, jwt_str: str, check_claims: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
+) -> Optional[Dict[str, Any]]:
     try:
         jwt = JWT(
             jwt=jwt_str,
@@ -57,7 +57,9 @@ def from_jwt(
         return None
 
 
-def from_jwe(jwt_priv_key: JWK, jwt_pub_key: JWK, jwe_str: str) -> Dict[str, Any]:
+def from_jwe(
+    jwt_priv_key: JWK, jwt_pub_key: JWK, jwe_str: str
+) -> Optional[Dict[str, Any]]:
     jwe = JWE.from_jose_token(jwe_str)
     jwe.decrypt(jwt_priv_key)
     return from_jwt(jwt_pub_key, jwe.payload.decode("utf-8"))

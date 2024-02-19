@@ -22,8 +22,8 @@ from app.exceptions.app_exceptions import (
     IrmaSessionExpired,
     IrmaSessionNotCompleted,
     InvalidStateException,
-    InvalidRequestException,
     SessionNotFoundException,
+    InvalidJWTException,
 )
 from app.models.session import Session, SessionType, SessionStatus, SessionLoa
 from app.services.irma_service import IrmaService
@@ -313,6 +313,8 @@ class SessionService:
         )
         # Todo: Use pubkey from OIDC Config JSON
         claims = self._jwt_service.from_jwe(self._oidc_provider_pub_key, userinfo_jwt)
+        if claims is None:
+            raise InvalidJWTException(state)
 
         signed_userinfo = self._jwt_service.from_jwt(
             self._register_api_crt,
@@ -320,9 +322,7 @@ class SessionService:
             {"iss": self._register_api_issuer, "exp": time.time(), "nbf": time.time()},
         )
         if signed_userinfo is None:
-            raise InvalidRequestException(
-                state=state,
-            )
+            raise InvalidJWTException(state)
 
         session.session_status = SessionStatus.DONE
         session.uzi_id = signed_userinfo["uzi_id"]
@@ -360,10 +360,10 @@ class SessionService:
             "oidc_state_" + state
         )
         if not login_state_from_redis:
-            raise InvalidStateException()
+            raise InvalidStateException(state)
 
         login_state = LoginState(**json.loads(login_state_from_redis))
         if not login_state:
-            raise InvalidStateException()
+            raise InvalidStateException(state)
 
         return login_state

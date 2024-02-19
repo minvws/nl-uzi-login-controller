@@ -2,7 +2,7 @@ from typing import List, Optional
 from abc import ABC
 from configparser import ConfigParser
 
-from app.exceptions.oidc_error_constants import INVALID_REQUEST, ACCESS_DENIED
+from app.exceptions.oidc_error_constants import INVALID_REQUEST, ACCESS_DENIED, INVALID_SCOPE
 from app.exceptions.app_error_constatns import SESSION_NOT_FOUND_ERROR
 
 config = ConfigParser()
@@ -68,16 +68,20 @@ class ProviderConfigNotFound(Exception):
         super().__init__("Provider well known configuration not found")
 
 
-class ClientScopeException(Exception):
-    def __init__(self, unsupported_scopes: List[str]) -> None:
-        self.unsupported_scopes = " ".join(unsupported_scopes)
-        super().__init__(f"Client scope is not supported: {self.unsupported_scopes}")
-
-
 class UnexpectedResponseCode(Exception):
     def __init__(self, status_code: int) -> None:
         self.status_code = status_code
         super().__init__(f"Unexpected code received: {self.status_code}")
+
+
+class ClientScopeException(RedirectBaseException):
+    def __init__(self, state: str, unsupported_scopes: List[str]) -> None:
+        self.unsupported_scopes = " ".join(unsupported_scopes)
+        super().__init__(
+            error=INVALID_SCOPE,
+            state=state,
+            error_description=f"Client scope is not supported: {self.unsupported_scopes}"
+        )
 
 
 # newly added exceptions

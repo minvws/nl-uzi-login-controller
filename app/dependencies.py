@@ -85,6 +85,5 @@ session_service_ = SessionService(
     ),
     session_polling_interval=config.getint(
         "irma", "session_polling_interval", fallback=1000
-    ),
-    fallback_url=redirect_url_,
+    )
 )

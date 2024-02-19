@@ -50,7 +50,7 @@ class OidcService:
             set(client_scopes) - set(provider.well_known_configuration.scopes_supported)
         )
         if unsupported_scopes:
-            raise ClientScopeException(unsupported_scopes)
+            raise ClientScopeException(oidc_state, unsupported_scopes)
 
         params = AuthorizationParams(
             client_id=client_id,

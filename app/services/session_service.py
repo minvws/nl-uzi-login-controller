@@ -62,7 +62,6 @@ class SessionService:
         register_api_issuer: Optional[str],
         mock_enabled: bool,
         oidc_provider_pub_key: Optional[JWK],
-        fallback_url: str,
         session_server_events_enabled: bool = False,
         session_server_events_timeout: int = 2000,
         session_polling_interval: int = 1000,
@@ -85,7 +84,6 @@ class SessionService:
         self._session_polling_interval = session_polling_interval
         self._register_api_crt = register_api_crt
         self._register_api_issuer = register_api_issuer
-        self._fallback_url = fallback_url
 
     def create(self, raw_jwt: str) -> JSONResponse:
         jwt = JWT(

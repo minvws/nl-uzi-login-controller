@@ -16,13 +16,14 @@ from jwcrypto.jwk import JWK
 from starlette.responses import RedirectResponse, Response
 from starlette.templating import Jinja2Templates
 
-from app.exceptions import (
+from app.exceptions.app_exceptions import (
     GeneralServerException,
     IrmaServerException,
     IrmaSessionExpired,
     IrmaSessionNotCompleted,
     InvalidStateException,
     InvalidRequestException,
+    SessionNotFoundException,
 )
 from app.models.session import Session, SessionType, SessionStatus, SessionLoa
 from app.services.irma_service import IrmaService
@@ -193,10 +194,8 @@ class SessionService:
             f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
         )
         if not session_str:
-            return RedirectResponse(
-                url=f"{redirect_url}?state={state}&error={SESSION_NOT_FOUND_ERROR}",
-                status_code=403,
-            )
+            raise SessionNotFoundException(state=state)
+
         session = Session.parse_raw(session_str)
         return templates.TemplateResponse(
             "login.html",
@@ -220,10 +219,7 @@ class SessionService:
             f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
         )
         if not session_str:
-            return RedirectResponse(
-                url=f"{redirect_url}?state={state}&error={SESSION_NOT_FOUND_ERROR}",
-                status_code=403,
-            )
+            raise SessionNotFoundException(state=state)
 
         session: Session = Session.parse_raw(session_str)
         if not session.session_type == SessionType.UZI_CARD:
@@ -327,7 +323,6 @@ class SessionService:
         )
         if signed_userinfo is None:
             raise InvalidRequestException(
-                redirect_url=self._fallback_url,
                 state=state,
             )
 

@@ -4,7 +4,7 @@ import requests
 
 from fastapi.exceptions import RequestValidationError
 from starlette.responses import RedirectResponse, Response
-from app.exceptions import (
+from app.exceptions.app_exceptions import (
     ProviderConfigNotFound,
     ProviderNotFound,
     ClientScopeException,

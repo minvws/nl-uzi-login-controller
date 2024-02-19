@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from starlette.staticfiles import StaticFiles
 
 from app.dependencies import config
-from app.exceptions import general_exception_handler
+from app.exceptions.app_exception_handler import general_exception_handler
 from app.routers import session
 from app.routers import login
 

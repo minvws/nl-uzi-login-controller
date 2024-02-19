@@ -6,8 +6,8 @@ from app.exceptions.oidc_error_constants import (
     INVALID_REQUEST,
     ACCESS_DENIED,
     INVALID_SCOPE,
+    SESSION_NOT_FOUND_ERROR
 )
-from app.exceptions.app_error_constatns import SESSION_NOT_FOUND_ERROR
 
 config = ConfigParser()
 config.read("app.conf")

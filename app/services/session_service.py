@@ -22,6 +22,7 @@ from app.exceptions import (
     IrmaSessionExpired,
     IrmaSessionNotCompleted,
     InvalidStateException,
+    InvalidRequestException,
 )
 from app.models.session import Session, SessionType, SessionStatus, SessionLoa
 from app.services.irma_service import IrmaService
@@ -60,6 +61,7 @@ class SessionService:
         register_api_issuer: Optional[str],
         mock_enabled: bool,
         oidc_provider_pub_key: Optional[JWK],
+        fallback_url: str,
         session_server_events_enabled: bool = False,
         session_server_events_timeout: int = 2000,
         session_polling_interval: int = 1000,
@@ -82,6 +84,7 @@ class SessionService:
         self._session_polling_interval = session_polling_interval
         self._register_api_crt = register_api_crt
         self._register_api_issuer = register_api_issuer
+        self._fallback_url = fallback_url
 
     def create(self, raw_jwt: str) -> JSONResponse:
         jwt = JWT(
@@ -322,6 +325,11 @@ class SessionService:
             claims["signed_userinfo"],
             {"iss": self._register_api_issuer, "exp": time.time(), "nbf": time.time()},
         )
+        if signed_userinfo is None:
+            raise InvalidRequestException(
+                redirect_url=self._fallback_url,
+                state=state,
+            )
 
         session.session_status = SessionStatus.DONE
         session.uzi_id = signed_userinfo["uzi_id"]

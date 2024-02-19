@@ -1,6 +1,30 @@
-from typing import List
+from typing import List, Optional
+from abc import ABC
+
 from fastapi import Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
+
+
+class RedirectBaseException(Exception, ABC):
+    def __init__(
+        self,
+        redirect_url: str,
+        error: str,
+        state: str,
+        error_description: Optional[str] = None,
+    ) -> None:
+        super().__init__(error_description)
+        self.error = error
+        self.error_description = error_description
+        self.state = state
+        self.redirect_url = self._build_redirect_url(redirect_url)
+
+    def _build_redirect_url(self, redirect_url: str) -> str:
+        return (
+            f"{redirect_url}?state={self.state}&error={self.error}&error_description={self.error_description}"
+            if self.error_description
+            else f"{redirect_url}?state={self}&error={self.error}"
+        )
 
 
 class InvalidStateException(Exception):
@@ -50,7 +74,20 @@ class UnexpectedResponseCode(Exception):
         super().__init__(f"Unexpected code received: {self.status_code}")
 
 
-async def general_exception_handler(
-    _request: Request, _exception: Exception
-) -> JSONResponse:
+class InvalidRequestException(RedirectBaseException):
+    def __init__(
+        self, redirect_url: str, state: str, error_description: Optional[str] = None
+    ) -> None:
+        super().__init__(
+            error="invalid_request",
+            error_description=error_description,
+            state=state,
+            redirect_url=redirect_url,
+        )
+
+
+def general_exception_handler(_request: Request, exception: Exception) -> Response:
+    if isinstance(exception, RedirectBaseException):
+        return RedirectResponse(url=exception.redirect_url, status_code=302)
+
     return JSONResponse("Internal Server Error", status_code=500)

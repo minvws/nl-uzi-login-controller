@@ -3,6 +3,7 @@ import logging
 import time
 from typing import Any, Dict, Optional
 
+import jwcrypto.jwt
 from cryptography.hazmat.primitives import hashes
 from jwcrypto.jwe import JWE
 from jwcrypto.jwk import JWK
@@ -44,13 +45,16 @@ class JwtService:
 def from_jwt(
     jwt_pub_key: JWK, jwt_str: str, check_claims: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
-    jwt = JWT(
-        jwt=jwt_str,
-        key=jwt_pub_key,
-        check_claims=check_claims,
-    )
-    jwt.validate(jwt_pub_key)
-    return json.loads(jwt.claims)
+    try:
+        jwt = JWT(
+            jwt=jwt_str,
+            key=jwt_pub_key,
+            check_claims=check_claims,
+        )
+        jwt.validate(jwt_pub_key)
+        return json.loads(jwt.claims)
+    except jwcrypto.jwt.JWTInvalidClaimValue:
+        return None
 
 
 def from_jwe(jwt_priv_key: JWK, jwt_pub_key: JWK, jwe_str: str) -> Dict[str, Any]:

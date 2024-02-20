@@ -88,6 +88,15 @@ class ServiceUnavailableException(RedirectBaseException):
         )
 
 
+class ProviderConfigNotFound(RedirectBaseException):
+    def __init__(self, state: str) -> None:
+        super().__init__(
+            error=TEMPORARILY_UNAVAILABLE,
+            error_description="Provider well known configuration not found",
+            state=state,
+        )
+
+
 class InvalidRequestException(RedirectBaseException):
     def __init__(self, state: str, error_description: Optional[str] = None) -> None:
         super().__init__(
@@ -99,11 +108,6 @@ class UnexpectedResponseCode(Exception):
     def __init__(self, status_code: int) -> None:
         self.status_code = status_code
         super().__init__(f"Unexpected code received: {self.status_code}")
-
-
-class ProviderConfigNotFound(Exception):
-    def __init__(self) -> None:
-        super().__init__("Provider well known configuration not found")
 
 
 class GeneralServerException(Exception):
@@ -124,6 +128,7 @@ class IrmaSessionExpired(Exception):
 class IrmaSessionNotCompleted(Exception):
     def __init__(self) -> None:
         super().__init__("Irma session not completed")
+
 
 class InvalidStateException(Exception):
     def __init__(self) -> None:

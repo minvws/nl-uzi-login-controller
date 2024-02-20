@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 import requests
 
 from fastapi.exceptions import RequestValidationError
@@ -37,11 +37,14 @@ class OidcService:
         oidc_provider_name: str,
         code_challenge: str,
         oidc_state: str,
-        max_state: str
+        max_state: str,
     ) -> RedirectResponse:
-        provider = self._get_oidc_provider(oidc_provider_name, oidc_state)
+        provider = self._get_oidc_provider(oidc_provider_name)
+        if provider is None:
+            raise ProviderNotFound(max_state)
+
         if provider.well_known_configuration is None:
-            raise ProviderConfigNotFound()
+            raise ProviderConfigNotFound(max_state)
 
         client_id = provider.client_id
         client_scopes = provider.client_scopes
@@ -62,7 +65,9 @@ class OidcService:
             code_challenge_method="S256",
             code_challenge=code_challenge,
         )
-        url = self._update_and_get_authorization_url(oidc_provider_name, params)
+        url = self._update_and_get_authorization_url(
+            oidc_provider_name, params, max_state
+        )
 
         return RedirectResponse(
             url=url,
@@ -70,9 +75,12 @@ class OidcService:
         )
 
     def get_userinfo(
-        self, oidc_provider_name: str, code: str, code_verifier: str, state: str
+        self, oidc_provider_name: str, code: str, code_verifier: str, max_state: str
     ) -> str:
-        provider = self._get_oidc_provider(oidc_provider_name, state)
+        provider = self._get_oidc_provider(oidc_provider_name)
+        if provider is None:
+            raise ProviderNotFound(max_state)
+
         provider_well_known_config = provider.well_known_configuration
         client_id = provider.client_id
         client_secret = provider.client_secret
@@ -109,10 +117,13 @@ class OidcService:
         return resp.text
 
     def _update_and_get_authorization_url(
-        self, oidc_provider_name: str, params: AuthorizationParams
+        self, oidc_provider_name: str, params: AuthorizationParams, max_state: str
     ) -> str:
-        provider = self._get_oidc_provider(oidc_provider_name, params.state)
-        if isinstance(provider.well_known_configuration, OIDCProviderDiscovery):
+        provider = self._get_oidc_provider(oidc_provider_name)
+        if provider is None:
+            raise ProviderNotFound(max_state)
+
+        if provider.well_known_configuration is not None:
             updated_url = (
                 provider.well_known_configuration.authorization_endpoint
                 + "?"
@@ -120,15 +131,16 @@ class OidcService:
             )
             return updated_url
 
-        raise ProviderNotFound(params.state)
+        raise ProviderConfigNotFound(max_state)
 
-    def _get_oidc_provider(self, oidc_provider_name: str, state: str) -> OIDCProvider:
+    def _get_oidc_provider(self, oidc_provider_name: str) -> Optional[OIDCProvider]:
         if oidc_provider_name in self._oidc_providers:
             provider = self._oidc_providers[oidc_provider_name]
             if provider.well_known_configuration is None:
                 self._update_provider_discovery(provider)
             return provider
-        raise ProviderNotFound(state)
+        return None
+        # raise ProviderNotFound(state)
 
     def _update_provider_discovery(self, oidc_provider: OIDCProvider) -> None:
         well_known_url = "".join(

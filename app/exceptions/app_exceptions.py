@@ -46,13 +46,6 @@ class RedirectBaseException(Exception, ABC):
         return redirect_url + "?" + params
 
 
-class InvalidStateException(RedirectBaseException):
-    def __init__(self, state: str) -> None:
-        super().__init__(
-            error=ACCESS_DENIED, error_description="Invalid state", state=state
-        )
-
-
 class ProviderNotFound(RedirectBaseException):
     def __init__(self, state: str) -> None:
         super().__init__(
@@ -131,3 +124,7 @@ class IrmaSessionExpired(Exception):
 class IrmaSessionNotCompleted(Exception):
     def __init__(self) -> None:
         super().__init__("Irma session not completed")
+
+class InvalidStateException(Exception):
+    def __init__(self) -> None:
+        super().__init__("State is invalid or expired")

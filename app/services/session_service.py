@@ -269,13 +269,12 @@ class SessionService:
             redirect_url=redirect_url,
         )
 
-        print("state from redis:\n", state)
         redis_key = "oidc_state_" + oidc_state
         self._redis_client.set(redis_key, json.dumps(login_state.to_dict()))
         self._redis_client.expire(redis_key, self._expires_in_s)
 
         return self._oidc_service.get_authorize_response(
-            oidc_provider_name, code_challenge, oidc_state
+            oidc_provider_name, code_challenge, oidc_state, state
         )
 
     def login_oidc_callback(
@@ -366,10 +365,10 @@ class SessionService:
             "oidc_state_" + state
         )
         if not login_state_from_redis:
-            raise InvalidStateException(state)
+            raise InvalidStateException()
 
         login_state = LoginState(**json.loads(login_state_from_redis))
         if not login_state:
-            raise InvalidStateException(state)
+            raise InvalidStateException()
 
         return login_state

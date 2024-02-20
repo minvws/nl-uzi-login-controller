@@ -37,6 +37,7 @@ class OidcService:
         oidc_provider_name: str,
         code_challenge: str,
         oidc_state: str,
+        max_state: str
     ) -> RedirectResponse:
         provider = self._get_oidc_provider(oidc_provider_name, oidc_state)
         if provider.well_known_configuration is None:
@@ -49,7 +50,7 @@ class OidcService:
             set(client_scopes) - set(provider.well_known_configuration.scopes_supported)
         )
         if unsupported_scopes:
-            raise ClientScopeException(oidc_state, unsupported_scopes)
+            raise ClientScopeException(max_state, unsupported_scopes)
 
         params = AuthorizationParams(
             client_id=client_id,

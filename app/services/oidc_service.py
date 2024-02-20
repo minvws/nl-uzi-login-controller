@@ -140,7 +140,6 @@ class OidcService:
                 self._update_provider_discovery(provider)
             return provider
         return None
-        # raise ProviderNotFound(state)
 
     def _update_provider_discovery(self, oidc_provider: OIDCProvider) -> None:
         well_known_url = "".join(

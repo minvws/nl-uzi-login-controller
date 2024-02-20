@@ -7,6 +7,7 @@ from uzireader.uzipassuser import UziPassUser  # type: ignore
 from app.dependencies import session_service_, redirect_url_
 from app.services.session_service import SessionService
 from app.utils import enforce_cert_newlines
+from app.exceptions.app_exceptions import ServiceUnavailableException
 
 router = APIRouter(prefix="/login", tags=["Login"])
 
@@ -59,14 +60,14 @@ async def oidc_login(
 
 @router.get("/oidc/callback", response_model=None)
 async def callback_login(
-    state: Optional[str] = None,
+    state: str,
     code: Optional[str] = None,
     error: Optional[str] = None,
     error_description: Optional[str] = None,
     session_service: SessionService = Depends(lambda: session_service_),
 ) -> Union[Response, HTTPException]:
     if error is not None:
-        return session_service.fallback_error(error, error_description)
+        raise ServiceUnavailableException(state, error_description)
 
     if (state is not None) and (code is not None):
         return session_service.login_oidc_callback(state, code)

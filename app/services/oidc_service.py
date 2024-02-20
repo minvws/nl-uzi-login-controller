@@ -116,7 +116,7 @@ class OidcService:
             if error_description
             else f"{self._redirect_uri}?error={error}"
         )
-        return RedirectResponse(redirect_uri, status_code=400)
+        return RedirectResponse(redirect_uri)
 
     def _update_and_get_authorization_url(
         self, oidc_provider_name: str, params: AuthorizationParams

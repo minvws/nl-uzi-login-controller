@@ -1,3 +1,4 @@
+from urllib.parse import urlencode
 from typing import List, Optional
 from abc import ABC
 from configparser import ConfigParser
@@ -7,6 +8,7 @@ from app.exceptions.oidc_error_constants import (
     ACCESS_DENIED,
     INVALID_SCOPE,
     SESSION_NOT_FOUND_ERROR,
+    TEMPORARILY_UNAVAILABLE,
 )
 
 config = ConfigParser()
@@ -29,11 +31,19 @@ class RedirectBaseException(Exception, ABC):
         self.redirect_url = self._build_redirect_url(self.base_redirect_url)
 
     def _build_redirect_url(self, redirect_url: str) -> str:
-        return (
-            f"{self.base_redirect_url}?state={self.state}&error={self.error}&error_description={self.error_description}"
-            if self.error_description
-            else f"{redirect_url}?state={self.state}&error={self.error}"
+        params = (
+            urlencode(
+                {
+                    "state": self.state,
+                    "error": self.error,
+                    "error_description": self.error_description,
+                }
+            )
+            if self.error_description is not None
+            else urlencode({"state": self.state, "error": self.error})
         )
+
+        return redirect_url + "?" + params
 
 
 class InvalidStateException(RedirectBaseException):
@@ -73,6 +83,15 @@ class SessionNotFoundException(RedirectBaseException):
     def __init__(self, state: str) -> None:
         super().__init__(
             error=ACCESS_DENIED, state=state, error_description=SESSION_NOT_FOUND_ERROR
+        )
+
+
+class ServiceUnavailableException(RedirectBaseException):
+    def __init__(self, state: str, error_description: Optional[str] = None) -> None:
+        super().__init__(
+            error=TEMPORARILY_UNAVAILABLE,
+            state=state,
+            error_description=error_description,
         )
 
 

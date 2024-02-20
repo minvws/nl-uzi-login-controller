@@ -23,6 +23,7 @@ class RedirectBaseException(Exception, ABC):
     :param state: state coming from MAX
     :param error_description: extra error description
     """
+
     base_redirect_url: str = config.get("app", "redirect_url")
 
     def __init__(
@@ -31,9 +32,6 @@ class RedirectBaseException(Exception, ABC):
         state: str,
         error_description: Optional[str] = None,
     ) -> None:
-        """
-
-        """
         super().__init__(error_description)
         self.error = error
         self.error_description = error_description

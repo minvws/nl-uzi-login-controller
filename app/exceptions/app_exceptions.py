@@ -95,6 +95,13 @@ class ServiceUnavailableException(RedirectBaseException):
         )
 
 
+class InvalidRequestException(RedirectBaseException):
+    def __init__(self, state: str, error_description: Optional[str] = None) -> None:
+        super().__init__(
+            error=INVALID_REQUEST, state=state, error_description=error_description
+        )
+
+
 class UnexpectedResponseCode(Exception):
     def __init__(self, status_code: int) -> None:
         self.status_code = status_code

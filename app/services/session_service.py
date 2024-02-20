@@ -24,6 +24,8 @@ from app.exceptions.app_exceptions import (
     InvalidStateException,
     SessionNotFoundException,
     InvalidJWTException,
+    ServiceUnavailableException,
+    InvalidRequestException,
 )
 from app.models.session import Session, SessionType, SessionStatus, SessionLoa
 from app.services.irma_service import IrmaService
@@ -267,6 +269,7 @@ class SessionService:
             redirect_url=redirect_url,
         )
 
+        print("state from redis:\n", state)
         redis_key = "oidc_state_" + oidc_state
         self._redis_client.set(redis_key, json.dumps(login_state.to_dict()))
         self._redis_client.expire(redis_key, self._expires_in_s)
@@ -276,7 +279,7 @@ class SessionService:
         )
 
     def login_oidc_callback(
-        self, state: str, code: str
+        self, oidc_state: str, code: str
     ) -> Union[Response, HTTPException]:
         # check if oidc_login_method_feature is enabled
         if (
@@ -287,7 +290,7 @@ class SessionService:
         ):
             return Response(status_code=404)
 
-        login_state = self._get_login_state_from_redis(state)
+        login_state = self._get_login_state_from_redis(oidc_state)
         (
             exchange_token,
             state,
@@ -335,14 +338,21 @@ class SessionService:
             status_code=303,
         )
 
-    def fallback_error(
-        self, error: str, error_description: Optional[str] = None
-    ) -> Response:
-        if self._oidc_service is not None:
-            return self._oidc_service.redirect_error(error, error_description)
+    def handle_oidc_callback(
+        self,
+        oidc_state: str,
+        code: Optional[str] = None,
+        error: Optional[str] = None,
+        error_description: Optional[str] = None,
+    ) -> Union[Response, HTTPException]:
+        login_state = self._get_login_state_from_redis(oidc_state)
+        if error is not None:
+            raise ServiceUnavailableException(login_state.state, error_description)
 
-        # if oidc service is not available
-        return Response(status_code=404)
+        if oidc_state is not None and code is not None:
+            return self.login_oidc_callback(oidc_state, code)
+
+        raise InvalidRequestException(login_state.state, error_description)
 
     def _get_session_from_redis(self, exchange_token: str) -> Session:
         session_str: Union[str, bytes] = self._redis_client.get(  # type: ignore

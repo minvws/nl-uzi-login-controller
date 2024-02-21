@@ -245,10 +245,7 @@ class SessionService:
         redirect_url: str,
     ) -> Union[Response, HTTPException]:
         # check if oidc_login_method_feature is enabled
-        if (
-            self._oidc_service is None
-            or self._jwt_service is None
-        ):
+        if self._oidc_service is None or self._jwt_service is None:
             return Response(status_code=404)
         session: Session = self._get_session_from_redis(exchange_token)
         oidc_provider_name = session.oidc_provider_name

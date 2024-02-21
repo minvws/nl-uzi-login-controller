@@ -2,6 +2,8 @@ from typing import Optional, List
 
 from pydantic import BaseModel, Field
 
+from jwcrypto.jwk import JWK
+
 
 class OIDCProviderDiscovery(BaseModel):
     issuer: str
@@ -56,3 +58,4 @@ class OIDCProvider(BaseModel):
     issuer_url: str
     client_secret: Optional[str] = None
     verify_ssl: bool = True
+    oidc_provider_public_key: JWK

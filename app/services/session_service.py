@@ -314,8 +314,11 @@ class SessionService:
         userinfo_jwt = self._oidc_service.get_userinfo(
             oidc_provider_name, code, code_verifier
         )
-        # Todo: Use pubkey from OIDC Config JSON
-        claims = self._jwt_service.from_jwe(self._oidc_provider_pub_key, userinfo_jwt)
+
+        oidc_provider = self._oidc_service.get_oidc_provider(oidc_provider_name)
+        claims = self._jwt_service.from_jwe(
+            oidc_provider.oidc_provider_public_key, userinfo_jwt
+        )
 
         signed_userinfo = self._jwt_service.from_jwt(
             self._register_api_crt,

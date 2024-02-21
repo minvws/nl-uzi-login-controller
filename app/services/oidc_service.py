@@ -39,7 +39,7 @@ class OidcService:
         code_challenge: str,
         oidc_state: str,
     ) -> RedirectResponse:
-        provider = self._get_oidc_provider(oidc_provider_name)
+        provider = self.get_oidc_provider(oidc_provider_name)
         if provider.well_known_configuration is None:
             raise ProviderConfigNotFound()
 
@@ -72,7 +72,7 @@ class OidcService:
     def get_userinfo(
         self, oidc_provider_name: str, code: str, code_verifier: str
     ) -> str:
-        provider = self._get_oidc_provider(oidc_provider_name)
+        provider = self.get_oidc_provider(oidc_provider_name)
         provider_well_known_config = provider.well_known_configuration
         client_id = provider.client_id
         client_secret = provider.client_secret
@@ -121,7 +121,7 @@ class OidcService:
     def _update_and_get_authorization_url(
         self, oidc_provider_name: str, params: AuthorizationParams
     ) -> str:
-        provider = self._get_oidc_provider(oidc_provider_name)
+        provider = self.get_oidc_provider(oidc_provider_name)
         if isinstance(provider.well_known_configuration, OIDCProviderDiscovery):
             updated_url = (
                 provider.well_known_configuration.authorization_endpoint
@@ -132,7 +132,7 @@ class OidcService:
 
         raise ProviderNotFound()
 
-    def _get_oidc_provider(self, oidc_provider_name: str) -> OIDCProvider:
+    def get_oidc_provider(self, oidc_provider_name: str) -> OIDCProvider:
         if oidc_provider_name in self._oidc_providers:
             provider = self._oidc_providers[oidc_provider_name]
             if provider.well_known_configuration is None:

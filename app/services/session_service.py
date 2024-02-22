@@ -308,10 +308,10 @@ class SessionService:
             oidc_provider_name, code, code_verifier
         )
 
-        oidc_provider = self._oidc_service.get_oidc_provider(oidc_provider_name)
-        claims = self._jwt_service.from_jwe(
-            oidc_provider.oidc_provider_public_key, userinfo_jwt
+        oidc_provider_public_key = self._oidc_service.get_oidc_provider_public_key(
+            oidc_provider_name
         )
+        claims = self._jwt_service.from_jwe(oidc_provider_public_key, userinfo_jwt)
 
         signed_userinfo = self._jwt_service.from_jwt(
             self._register_api_crt,

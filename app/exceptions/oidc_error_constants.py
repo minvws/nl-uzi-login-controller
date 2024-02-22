@@ -8,4 +8,4 @@ SERVER_ERROR = "server_error"
 TEMPORARILY_UNAVAILABLE = "temporarily_unavailable"
 
 # Miscellaneous
-SESSION_NOT_FOUND_ERROR = "session%20not%20found"
+SESSION_NOT_FOUND_ERROR = "session not found"

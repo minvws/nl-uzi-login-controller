@@ -141,3 +141,8 @@ class IrmaSessionNotCompleted(Exception):
 class InvalidStateException(Exception):
     def __init__(self) -> None:
         super().__init__("State is invalid or expired")
+
+
+class LoginStateNotFoundException(Exception):
+    def __init__(self) -> None:
+        super().__init__("Login state not found or expired")

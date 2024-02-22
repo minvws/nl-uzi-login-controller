@@ -21,7 +21,7 @@ from app.exceptions.app_exceptions import (
     IrmaServerException,
     IrmaSessionExpired,
     IrmaSessionNotCompleted,
-    InvalidStateException,
+    LoginStateNotFoundException,
     SessionNotFoundException,
     InvalidJWTException,
     ServiceUnavailableException,
@@ -250,7 +250,11 @@ class SessionService:
             or self._jwt_service is None
         ):
             return Response(status_code=404)
-        session: Session = self._get_session_from_redis(exchange_token)
+
+        session = self._get_session_from_redis(exchange_token)
+        if session is None:
+            raise SessionNotFoundException(state)
+
         oidc_provider_name = session.oidc_provider_name
         if not oidc_provider_name:
             logger.warning("OIDC Provider name not found")
@@ -290,6 +294,9 @@ class SessionService:
             return Response(status_code=404)
 
         login_state = self._get_login_state_from_redis(oidc_state)
+        if login_state is None:
+            raise LoginStateNotFoundException()
+
         (
             exchange_token,
             state,
@@ -345,6 +352,9 @@ class SessionService:
         error_description: Optional[str] = None,
     ) -> Union[Response, HTTPException]:
         login_state = self._get_login_state_from_redis(oidc_state)
+        if login_state is None:
+            raise LoginStateNotFoundException()
+
         if error is not None:
             raise ServiceUnavailableException(login_state.state, error_description)
 
@@ -353,22 +363,22 @@ class SessionService:
 
         raise InvalidRequestException(login_state.state, error_description)
 
-    def _get_session_from_redis(self, exchange_token: str) -> Session:
+    def _get_session_from_redis(self, exchange_token: str) -> Optional[Session]:
         session_str: Union[str, bytes] = self._redis_client.get(  # type: ignore
             f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
         )
+        if not session_str:
+            return None
+
         session: Session = Session.parse_raw(session_str)
         return session
 
-    def _get_login_state_from_redis(self, state: str) -> LoginState:
+    def _get_login_state_from_redis(self, state: str) -> Optional[LoginState]:
         login_state_from_redis: Union[str, None] = self._redis_client.get(
             "oidc_state_" + state
         )
         if not login_state_from_redis:
-            raise InvalidStateException()
+            return None
 
         login_state = LoginState(**json.loads(login_state_from_redis))
-        if not login_state:
-            raise InvalidStateException()
-
         return login_state

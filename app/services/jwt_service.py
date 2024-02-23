@@ -3,11 +3,11 @@ import logging
 import time
 from typing import Any, Dict, Optional
 
-import jwcrypto.jwt
 from cryptography.hazmat.primitives import hashes
 from jwcrypto.jwe import JWE
 from jwcrypto.jwk import JWK
 from jwcrypto.jwt import JWT
+from jwcrypto.common import JWException
 
 JWT_EXP_MARGIN = 60
 
@@ -53,7 +53,7 @@ def from_jwt(
         )
         jwt.validate(jwt_pub_key)
         return json.loads(jwt.claims)
-    except jwcrypto.jwt.JWTInvalidClaimValue:
+    except (JWException, ValueError):
         return None
 
 

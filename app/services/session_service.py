@@ -320,7 +320,7 @@ class SessionService:
         claims = self._jwt_service.from_jwe(self._oidc_provider_pub_key, userinfo_jwt)
         if claims is None:
             raise InvalidJWTException(state=state)
-
+        print(state)
         signed_userinfo = self._jwt_service.from_jwt(
             self._register_api_crt,
             claims["signed_userinfo"],

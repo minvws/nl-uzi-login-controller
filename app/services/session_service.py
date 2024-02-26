@@ -26,6 +26,7 @@ from app.exceptions.app_exceptions import (
     InvalidJWTException,
     ServiceUnavailableException,
     InvalidRequestException,
+    ProviderPublicKeyNotFound,
 )
 from app.models.session import Session, SessionType, SessionStatus, SessionLoa
 from app.services.irma_service import IrmaService
@@ -309,15 +310,16 @@ class SessionService:
         userinfo_jwt = self._oidc_service.get_userinfo(
             oidc_provider_name, code, code_verifier, state
         )
-        # Todo: Use pubkey from OIDC Config JSON
-        claims = self._jwt_service.from_jwe(self._oidc_provider_pub_key, userinfo_jwt)
-        if claims is None:
-            raise InvalidJWTException(state=state)
 
         oidc_provider_public_key = self._oidc_service.get_oidc_provider_public_key(
             oidc_provider_name
         )
+        if oidc_provider_public_key is None:
+            raise ProviderPublicKeyNotFound(state)
+
         claims = self._jwt_service.from_jwe(oidc_provider_public_key, userinfo_jwt)
+        if claims is None:
+            raise InvalidJWTException(state=state)
 
         signed_userinfo = self._jwt_service.from_jwt(
             self._register_api_crt,

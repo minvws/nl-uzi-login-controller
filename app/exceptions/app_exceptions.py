@@ -61,6 +61,11 @@ class ProviderNotFound(RedirectBaseException):
         )
 
 
+class ProviderPublicKeyNotFound(RedirectBaseException):
+    def __init__(self, state: str) -> None:
+        super().__init__(error=INVALID_REQUEST, state=state)
+
+
 class ClientScopeException(RedirectBaseException):
     def __init__(self, state: str, unsupported_scopes: List[str]) -> None:
         self.unsupported_scopes = " ".join(unsupported_scopes)

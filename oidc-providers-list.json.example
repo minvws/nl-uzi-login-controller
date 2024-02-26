@@ -4,13 +4,15 @@
         "issuer": "https://localhost:8003",
         "client_id": "c512596d-43e0-430a-8926-6e5a53cb9ebc",
         "scopes": ["openid"],
-        "verify_ssl": false
+        "verify_ssl": false,
+        "oidc_provider_public_key_path": "secrets/nl-rdo-uzipoc-oidc-provider.pub"
     },
      {
         "name": "identities",
         "issuer": "https://localhost:8003",
         "client_id": "c512596d-43e0-430a-8926-6e5a53cb9ebc",
         "scopes": ["openid", "identities"],
-        "verify_ssl": false
+        "verify_ssl": false,
+        "oidc_provider_public_key_path": "secrets/nl-rdo-uzipoc-oidc-provider.pub"
     }
 ]

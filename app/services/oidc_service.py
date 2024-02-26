@@ -1,7 +1,11 @@
 from typing import Dict, Optional
+import urllib
 import requests
 
 from fastapi.exceptions import RequestValidationError
+from starlette.responses import RedirectResponse, Response
+from jwcrypto.jwk import JWK
+from app.exceptions import (
 from starlette.responses import RedirectResponse
 from app.exceptions.app_exceptions import (
     ProviderConfigNotFound,
@@ -153,3 +157,7 @@ class OidcService:
                 oidc_provider.verify_ssl,
             )
         )
+
+    def get_oidc_provider_public_key(self, oidc_provider_name: str) -> JWK:
+        oidc_provider = self._get_oidc_provider(oidc_provider_name)
+        return oidc_provider.oidc_provider_public_key

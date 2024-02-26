@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse, Response
 
 from app.dependencies import session_service_
 from app.services.session_service import SessionService
-from app.exceptions import IrmaSessionExpired
+from app.exceptions.app_exceptions import IrmaSessionExpired
 
 
 router = APIRouter(prefix="/session", tags=["Session"])

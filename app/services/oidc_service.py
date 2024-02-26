@@ -1,11 +1,10 @@
 from typing import Dict, Optional
-import urllib
 import requests
 
 from fastapi.exceptions import RequestValidationError
-from starlette.responses import RedirectResponse, Response
 from jwcrypto.jwk import JWK
-from app.exceptions import (
+from starlette.responses import RedirectResponse
+from app.exceptions.app_exceptions import (
     ProviderConfigNotFound,
     ProviderNotFound,
     ClientScopeException,
@@ -39,10 +38,14 @@ class OidcService:
         oidc_provider_name: str,
         code_challenge: str,
         oidc_state: str,
+        max_state: str,
     ) -> RedirectResponse:
         provider = self._get_oidc_provider(oidc_provider_name)
+        if provider is None:
+            raise ProviderNotFound(max_state)
+
         if provider.well_known_configuration is None:
-            raise ProviderConfigNotFound()
+            raise ProviderConfigNotFound(max_state)
 
         client_id = provider.client_id
         client_scopes = provider.client_scopes
@@ -51,7 +54,7 @@ class OidcService:
             set(client_scopes) - set(provider.well_known_configuration.scopes_supported)
         )
         if unsupported_scopes:
-            raise ClientScopeException(unsupported_scopes)
+            raise ClientScopeException(max_state, unsupported_scopes)
 
         params = AuthorizationParams(
             client_id=client_id,
@@ -63,7 +66,9 @@ class OidcService:
             code_challenge_method="S256",
             code_challenge=code_challenge,
         )
-        url = self._update_and_get_authorization_url(oidc_provider_name, params)
+        url = self._update_and_get_authorization_url(
+            oidc_provider_name, params, max_state
+        )
 
         return RedirectResponse(
             url=url,
@@ -71,9 +76,12 @@ class OidcService:
         )
 
     def get_userinfo(
-        self, oidc_provider_name: str, code: str, code_verifier: str
+        self, oidc_provider_name: str, code: str, code_verifier: str, max_state: str
     ) -> str:
         provider = self._get_oidc_provider(oidc_provider_name)
+        if provider is None:
+            raise ProviderNotFound(max_state)
+
         provider_well_known_config = provider.well_known_configuration
         client_id = provider.client_id
         client_secret = provider.client_secret
@@ -109,21 +117,14 @@ class OidcService:
             raise RequestValidationError("Unsupported media type")
         return resp.text
 
-    def redirect_error(
-        self, error: str, error_description: Optional[str] = None
-    ) -> Response:
-        redirect_uri = (
-            f"{self._redirect_uri}?error={error}&error_description={urllib.parse.quote(error_description)}"
-            if error_description
-            else f"{self._redirect_uri}?error={error}"
-        )
-        return RedirectResponse(redirect_uri, status_code=400)
-
     def _update_and_get_authorization_url(
-        self, oidc_provider_name: str, params: AuthorizationParams
+        self, oidc_provider_name: str, params: AuthorizationParams, max_state: str
     ) -> str:
         provider = self._get_oidc_provider(oidc_provider_name)
-        if isinstance(provider.well_known_configuration, OIDCProviderDiscovery):
+        if provider is None:
+            raise ProviderNotFound(max_state)
+
+        if provider.well_known_configuration is not None:
             updated_url = (
                 provider.well_known_configuration.authorization_endpoint
                 + "?"
@@ -131,15 +132,15 @@ class OidcService:
             )
             return updated_url
 
-        raise ProviderNotFound()
+        raise ProviderConfigNotFound(max_state)
 
-    def _get_oidc_provider(self, oidc_provider_name: str) -> OIDCProvider:
+    def _get_oidc_provider(self, oidc_provider_name: str) -> Optional[OIDCProvider]:
         if oidc_provider_name in self._oidc_providers:
             provider = self._oidc_providers[oidc_provider_name]
             if provider.well_known_configuration is None:
                 self._update_provider_discovery(provider)
             return provider
-        raise ProviderNotFound()
+        return None
 
     def _update_provider_discovery(self, oidc_provider: OIDCProvider) -> None:
         well_known_url = "".join(
@@ -154,6 +155,9 @@ class OidcService:
             )
         )
 
-    def get_oidc_provider_public_key(self, oidc_provider_name: str) -> JWK:
+    def get_oidc_provider_public_key(self, oidc_provider_name: str) -> Optional[JWK]:
         oidc_provider = self._get_oidc_provider(oidc_provider_name)
+        if oidc_provider is None:
+            return None
+
         return oidc_provider.oidc_provider_public_key

@@ -13,7 +13,7 @@ from jwcrypto.jwk import JWK
 import requests
 
 from app.models.oidc_provider import OIDCProvider
-from app.exceptions import UnexpectedResponseCode
+from app.exceptions.app_exceptions import UnexpectedResponseCode
 
 config = ConfigParser()
 config.read("app.conf")

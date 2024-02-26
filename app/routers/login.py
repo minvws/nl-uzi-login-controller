@@ -59,16 +59,10 @@ async def oidc_login(
 
 @router.get("/oidc/callback", response_model=None)
 async def callback_login(
-    state: Optional[str] = None,
+    state: str,
     code: Optional[str] = None,
     error: Optional[str] = None,
     error_description: Optional[str] = None,
     session_service: SessionService = Depends(lambda: session_service_),
 ) -> Union[Response, HTTPException]:
-    if error is not None:
-        return session_service.fallback_error(error, error_description)
-
-    if (state is not None) and (code is not None):
-        return session_service.login_oidc_callback(state, code)
-
-    return session_service.fallback_error("invalid_request")
+    return session_service.handle_oidc_callback(state, code, error, error_description)

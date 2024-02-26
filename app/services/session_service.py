@@ -16,13 +16,19 @@ from jwcrypto.jwk import JWK
 from starlette.responses import RedirectResponse, Response
 from starlette.templating import Jinja2Templates
 
-from app.exceptions import (
+from app.exceptions.app_exceptions import (
     GeneralServerException,
     IrmaServerException,
     IrmaSessionExpired,
     IrmaSessionNotCompleted,
-    InvalidStateException,
+    LoginStateNotFoundException,
+    SessionNotFoundException,
+    InvalidJWTException,
+    ServiceUnavailableException,
+    InvalidRequestException,
+    ProviderPublicKeyNotFound,
 )
+
 from app.models.session import Session, SessionType, SessionStatus, SessionLoa
 from app.services.irma_service import IrmaService
 from app.services.jwt_service import JwtService
@@ -31,8 +37,6 @@ from app.utils import rand_pass
 from app.models.login_state import LoginState
 
 REDIS_SESSION_KEY = "session"
-SESSION_NOT_FOUND_ERROR = "session%20not%20found"
-
 
 logger = logging.getLogger(__name__)
 config = ConfigParser()
@@ -188,10 +192,8 @@ class SessionService:
             f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
         )
         if not session_str:
-            return RedirectResponse(
-                url=f"{redirect_url}?state={state}&error={SESSION_NOT_FOUND_ERROR}",
-                status_code=403,
-            )
+            raise SessionNotFoundException(state=state)
+
         session = Session.parse_raw(session_str)
         return templates.TemplateResponse(
             "login.html",
@@ -215,10 +217,7 @@ class SessionService:
             f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
         )
         if not session_str:
-            return RedirectResponse(
-                url=f"{redirect_url}?state={state}&error={SESSION_NOT_FOUND_ERROR}",
-                status_code=403,
-            )
+            raise SessionNotFoundException(state=state)
 
         session: Session = Session.parse_raw(session_str)
         if not session.session_type == SessionType.UZI_CARD:
@@ -247,7 +246,11 @@ class SessionService:
         # check if oidc_login_method_feature is enabled
         if self._oidc_service is None or self._jwt_service is None:
             return Response(status_code=404)
-        session: Session = self._get_session_from_redis(exchange_token)
+
+        session = self._get_session_from_redis(exchange_token)
+        if session is None:
+            raise SessionNotFoundException(state)
+
         oidc_provider_name = session.oidc_provider_name
         if not oidc_provider_name:
             logger.warning("OIDC Provider name not found")
@@ -271,11 +274,11 @@ class SessionService:
         self._redis_client.expire(redis_key, self._expires_in_s)
 
         return self._oidc_service.get_authorize_response(
-            oidc_provider_name, code_challenge, oidc_state
+            oidc_provider_name, code_challenge, oidc_state, state
         )
 
     def login_oidc_callback(
-        self, state: str, code: str
+        self, oidc_state: str, code: str
     ) -> Union[Response, HTTPException]:
         # check if oidc_login_method_feature is enabled
         if (
@@ -285,7 +288,10 @@ class SessionService:
         ):
             return Response(status_code=404)
 
-        login_state = self._get_login_state_from_redis(state)
+        login_state = self._get_login_state_from_redis(oidc_state)
+        if login_state is None:
+            raise LoginStateNotFoundException()
+
         (
             exchange_token,
             state,
@@ -295,29 +301,34 @@ class SessionService:
 
         session = self._get_session_from_redis(exchange_token)
         if not session:
-            return RedirectResponse(
-                url=f"{redirect_url}?state={state}&error={SESSION_NOT_FOUND_ERROR}",
-                status_code=403,
-            )
+            raise SessionNotFoundException(state)
+
         if not session.session_type == SessionType.OIDC:
             logger.warning("Session type is not OIDC")
             return HTTPException(status_code=404)
 
         oidc_provider_name: str = session.oidc_provider_name  # type: ignore
         userinfo_jwt = self._oidc_service.get_userinfo(
-            oidc_provider_name, code, code_verifier
+            oidc_provider_name, code, code_verifier, state
         )
 
         oidc_provider_public_key = self._oidc_service.get_oidc_provider_public_key(
             oidc_provider_name
         )
+        if oidc_provider_public_key is None:
+            raise ProviderPublicKeyNotFound(state)
+
         claims = self._jwt_service.from_jwe(oidc_provider_public_key, userinfo_jwt)
+        if claims is None:
+            raise InvalidJWTException(state=state)
 
         signed_userinfo = self._jwt_service.from_jwt(
             self._register_api_crt,
             claims["signed_userinfo"],
             {"iss": self._register_api_issuer, "exp": time.time(), "nbf": time.time()},
         )
+        if signed_userinfo is None:
+            raise InvalidJWTException(state=state)
 
         session.session_status = SessionStatus.DONE
         session.uzi_id = signed_userinfo["uzi_id"]
@@ -334,31 +345,41 @@ class SessionService:
             status_code=303,
         )
 
-    def fallback_error(
-        self, error: str, error_description: Optional[str] = None
-    ) -> Response:
-        if self._oidc_service is not None:
-            return self._oidc_service.redirect_error(error, error_description)
+    def handle_oidc_callback(
+        self,
+        oidc_state: str,
+        code: Optional[str] = None,
+        error: Optional[str] = None,
+        error_description: Optional[str] = None,
+    ) -> Union[Response, HTTPException]:
+        login_state = self._get_login_state_from_redis(oidc_state)
+        if login_state is None:
+            raise LoginStateNotFoundException()
 
-        # if oidc service is not available
-        return Response(status_code=404)
+        if error is not None:
+            raise ServiceUnavailableException(login_state.state, error_description)
 
-    def _get_session_from_redis(self, exchange_token: str) -> Session:
+        if oidc_state is not None and code is not None:
+            return self.login_oidc_callback(oidc_state, code)
+
+        raise InvalidRequestException(login_state.state, error_description)
+
+    def _get_session_from_redis(self, exchange_token: str) -> Optional[Session]:
         session_str: Union[str, bytes] = self._redis_client.get(  # type: ignore
             f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{exchange_token}",
         )
+        if not session_str:
+            return None
+
         session: Session = Session.parse_raw(session_str)
         return session
 
-    def _get_login_state_from_redis(self, state: str) -> LoginState:
+    def _get_login_state_from_redis(self, state: str) -> Optional[LoginState]:
         login_state_from_redis: Union[str, None] = self._redis_client.get(
             "oidc_state_" + state
         )
         if not login_state_from_redis:
-            raise InvalidStateException()
+            return None
 
         login_state = LoginState(**json.loads(login_state_from_redis))
-        if not login_state:
-            raise InvalidStateException()
-
         return login_state

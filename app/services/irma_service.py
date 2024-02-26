@@ -4,7 +4,7 @@ from typing import Dict, List
 
 import requests
 
-from app.exceptions import IrmaServerException
+from app.exceptions.app_exceptions import IrmaServerException
 
 
 logger = logging.getLogger(__name__)

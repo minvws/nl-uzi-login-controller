@@ -9,6 +9,7 @@ from app.exceptions.oidc_error_constants import (
     INVALID_SCOPE,
     SESSION_NOT_FOUND_ERROR,
     TEMPORARILY_UNAVAILABLE,
+    SERVER_ERROR,
 )
 
 config = ConfigParser()
@@ -63,7 +64,11 @@ class ProviderNotFound(RedirectBaseException):
 
 class ProviderPublicKeyNotFound(RedirectBaseException):
     def __init__(self, state: str) -> None:
-        super().__init__(error=INVALID_REQUEST, state=state)
+        super().__init__(
+            error=SERVER_ERROR,
+            state=state,
+            error_description="OIDC Provider certificates not found",
+        )
 
 
 class ClientScopeException(RedirectBaseException):

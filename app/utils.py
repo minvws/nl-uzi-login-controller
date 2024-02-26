@@ -116,7 +116,9 @@ def load_oidc_well_known_config(
             if "verify_ssl" in provider
             else True
         )
+        oidc_provider_public_key = load_jwk(provider["oidc_provider_public_key_path"])
         discovery = None
+
         try:
             discovery = json_fetch_url(
                 url=provider_config_url, verify_ssl=provider["verify_ssl"]
@@ -131,6 +133,7 @@ def load_oidc_well_known_config(
             client_id=provider["client_id"],
             client_secret=client_secret,
             client_scopes=provider["scopes"],
+            oidc_provider_public_key=oidc_provider_public_key,
         )
         well_known_configs[provider["name"]] = provider_data
 

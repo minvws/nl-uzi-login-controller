@@ -25,7 +25,6 @@ _redis_client = create_redis_client(config["redis"])
 
 oidc_login_method_feature = config.getboolean("app", "oidc_login_method_feature")
 
-OIDC_PROVIDER_PUB_KEY = None
 JWT_SERVICE = None
 OIDC_SERVICE = None
 REGISTER_API_CRT = None
@@ -33,7 +32,6 @@ REGISTER_API_ISSUER = None
 
 if oidc_login_method_feature:
     jwt_priv_key = load_jwk(config.get("app", "jwt_priv_key_path"))
-    OIDC_PROVIDER_PUB_KEY = load_jwk(config.get("oidc_provider", "jwt_pub_key_path"))
     jwt_crt_content = file_content_raise_if_none(config.get("app", "jwt_crt_path"))
     REGISTER_API_CRT = load_jwk(config.get("oidc_provider", "register_api_crt_path"))
     REGISTER_API_ISSUER = config.get("oidc_provider", "register_api_jwt_issuer")
@@ -76,7 +74,6 @@ session_service_ = SessionService(
     register_api_crt=REGISTER_API_CRT,
     register_api_issuer=REGISTER_API_ISSUER,
     mock_enabled=config.getboolean("app", "mock_enabled"),
-    oidc_provider_pub_key=OIDC_PROVIDER_PUB_KEY,
     session_server_events_enabled=config.getboolean(
         "irma", "session_server_events_enabled", fallback=False
     ),

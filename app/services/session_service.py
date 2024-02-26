@@ -59,7 +59,6 @@ class SessionService:
         register_api_crt: Optional[JWK],
         register_api_issuer: Optional[str],
         mock_enabled: bool,
-        oidc_provider_pub_key: Optional[JWK],
         session_server_events_enabled: bool = False,
         session_server_events_timeout: int = 2000,
         session_polling_interval: int = 1000,
@@ -76,7 +75,6 @@ class SessionService:
         with open(jwt_issuer_crt_path, encoding="utf-8") as file:
             self._jwt_issuer_crt_path = JWK.from_pem(file.read().encode("utf-8"))
         self._mock_enabled = mock_enabled
-        self._oidc_provider_pub_key = oidc_provider_pub_key
         self._session_server_events_enabled = session_server_events_enabled
         self._session_server_events_timeout = session_server_events_timeout
         self._session_polling_interval = session_polling_interval
@@ -247,11 +245,7 @@ class SessionService:
         redirect_url: str,
     ) -> Union[Response, HTTPException]:
         # check if oidc_login_method_feature is enabled
-        if (
-            self._oidc_service is None
-            or self._oidc_provider_pub_key is None
-            or self._jwt_service is None
-        ):
+        if self._oidc_service is None or self._jwt_service is None:
             return Response(status_code=404)
         session: Session = self._get_session_from_redis(exchange_token)
         oidc_provider_name = session.oidc_provider_name
@@ -286,7 +280,6 @@ class SessionService:
         # check if oidc_login_method_feature is enabled
         if (
             self._oidc_service is None
-            or self._oidc_provider_pub_key is None
             or self._jwt_service is None
             or self._register_api_crt is None
         ):
@@ -314,8 +307,11 @@ class SessionService:
         userinfo_jwt = self._oidc_service.get_userinfo(
             oidc_provider_name, code, code_verifier
         )
-        # Todo: Use pubkey from OIDC Config JSON
-        claims = self._jwt_service.from_jwe(self._oidc_provider_pub_key, userinfo_jwt)
+
+        oidc_provider_public_key = self._oidc_service.get_oidc_provider_public_key(
+            oidc_provider_name
+        )
+        claims = self._jwt_service.from_jwe(oidc_provider_public_key, userinfo_jwt)
 
         signed_userinfo = self._jwt_service.from_jwt(
             self._register_api_crt,

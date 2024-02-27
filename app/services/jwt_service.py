@@ -53,7 +53,8 @@ def from_jwt(
         )
         jwt.validate(jwt_pub_key)
         return json.loads(jwt.claims)
-    except (JWException, ValueError):
+    except (JWException, ValueError) as exception:
+        logger.error(exception)
         return None
 
 

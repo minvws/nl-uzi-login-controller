@@ -316,11 +316,15 @@ class SessionService:
             oidc_provider_name
         )
         if oidc_provider_public_key is None:
-            raise ProviderPublicKeyNotFound(state)
+            raise ProviderPublicKeyNotFound(
+                state=state, provider_name=oidc_provider_name
+            )
 
         claims = self._jwt_service.from_jwe(oidc_provider_public_key, userinfo_jwt)
         if claims is None:
-            raise InvalidJWTException(state=state)
+            raise InvalidJWTException(
+                state=state, log_message="Invalid claims from userinfo JWE"
+            )
 
         signed_userinfo = self._jwt_service.from_jwt(
             self._register_api_crt,
@@ -328,7 +332,9 @@ class SessionService:
             {"iss": self._register_api_issuer, "exp": time.time(), "nbf": time.time()},
         )
         if signed_userinfo is None:
-            raise InvalidJWTException(state=state)
+            raise InvalidJWTException(
+                state=state, log_message="Invalid signed userinfo JWT"
+            )
 
         session.session_status = SessionStatus.DONE
         session.uzi_id = signed_userinfo["uzi_id"]

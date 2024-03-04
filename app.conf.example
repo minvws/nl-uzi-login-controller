@@ -14,6 +14,8 @@ http_timeout = 30
 http_retries = 20
 http_backof_time = 5
 
+loglevel = debug
+
 oidc_login_method_feature = False
 
 [session]

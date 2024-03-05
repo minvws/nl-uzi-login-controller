@@ -40,7 +40,6 @@ class RedirectBaseException(Exception, ABC):
         self.error_description = error_description
         self.state = state
         self.redirect_url = self._build_redirect_url(self.base_redirect_url)
-        self.log_message = log_message
 
     def _build_redirect_url(self, redirect_url: str) -> str:
         params = (

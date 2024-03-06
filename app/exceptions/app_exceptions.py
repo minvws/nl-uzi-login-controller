@@ -20,9 +20,10 @@ class RedirectBaseException(Exception, ABC):
     """
     Base class for all redirect exceptions in the login contronller
 
-    :param error: error name based on OAUTH defined errors
     :param state: state coming from MAX
-    :param error_description: extra error description
+    :param error: error name based on OAUTH defined errors
+    :param error_description: extra error description sent to the client
+    :param log_message: an exception message logged in the terminal
     """
 
     base_redirect_url: str = config.get("app", "redirect_url")
@@ -32,8 +33,9 @@ class RedirectBaseException(Exception, ABC):
         error: str,
         state: str,
         error_description: Optional[str] = None,
+        log_message: Optional[str] = None,
     ) -> None:
-        super().__init__(error_description)
+        super().__init__(log_message if log_message is not None else error_description)
         self.error = error
         self.error_description = error_description
         self.state = state
@@ -58,16 +60,21 @@ class RedirectBaseException(Exception, ABC):
 class ProviderNotFound(RedirectBaseException):
     def __init__(self, state: str) -> None:
         super().__init__(
-            error=INVALID_REQUEST, error_description="Provider not found", state=state
+            error=INVALID_REQUEST,
+            state=state,
+            error_description="Illegal or bad request",
+            log_message="Provider not found",
         )
 
 
 class ProviderPublicKeyNotFound(RedirectBaseException):
-    def __init__(self, state: str) -> None:
+    def __init__(self, state: str, provider_name: str) -> None:
+        self.provider_name = provider_name
         super().__init__(
             error=SERVER_ERROR,
             state=state,
-            error_description="OIDC Provider certificates not found",
+            log_message=f"OIDC Provider {provider_name} certificates not found",
+            error_description="Something went wrong",
         )
 
 
@@ -82,11 +89,14 @@ class ClientScopeException(RedirectBaseException):
 
 
 class InvalidJWTException(RedirectBaseException):
-    def __init__(self, state: str, error_description: Optional[str] = None) -> None:
+    def __init__(
+        self, state: str, log_message: str, error_description: Optional[str] = None
+    ) -> None:
         super().__init__(
             error=ACCESS_DENIED,
             error_description=error_description,
             state=state,
+            log_message=log_message,
         )
 
 

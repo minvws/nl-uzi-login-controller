@@ -82,7 +82,9 @@ def json_fetch_url(
     url: str, backof_time: int = 0, retries: int = 0, verify_ssl: bool = True
 ) -> Any:
     retry = 0
-    previous_exception = requests.ConnectionError("This error will be overwritten with the actual error if it occurs.")
+    previous_exception = requests.ConnectionError(
+        "This error will be overwritten with the actual error if it occurs."
+    )
     while retry <= retries:
         try:
             if retry > 0:

@@ -82,7 +82,7 @@ def json_fetch_url(
     url: str, backof_time: int = 0, retries: int = 0, verify_ssl: bool = True
 ) -> Any:
     retry = 0
-    previous_exception = None
+    previous_exception = requests.ConnectionError("This error will be overwritten with the actual error if it occurs.")
     while retry <= retries:
         try:
             if retry > 0:
@@ -93,10 +93,7 @@ def json_fetch_url(
         except requests.ConnectionError as request_exception:
             previous_exception = request_exception
             retry += 1
-
-    if isinstance(previous_exception, BaseException):
-        raise previous_exception
-    raise Exception("Failed to fetch url")
+    raise previous_exception
 
 
 def load_oidc_well_known_config(

@@ -96,6 +96,7 @@ def json_fetch_url(
 
     if isinstance(previous_exception, BaseException):
         raise previous_exception
+    raise Exception("Failed to fetch url")
 
 
 def load_oidc_well_known_config(

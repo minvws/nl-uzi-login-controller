@@ -45,7 +45,7 @@ deprecated==1.2.13
     # via jwcrypto
 dill==0.3.6
     # via pylint
-exceptiongroup==1.1.0
+exceptiongroup==1.2.0
     # via pytest
 fastapi==0.109.2
     # via app (setup.py)

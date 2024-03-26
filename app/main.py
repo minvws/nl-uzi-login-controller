@@ -1,11 +1,14 @@
 import logging
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from starlette.staticfiles import StaticFiles
 
 from app.dependencies import config
-from app.exceptions.app_exception_handler import general_exception_handler
+from app.exceptions.app_exception_handler import (
+    general_exception_handler,
+    http_exception_handler,
+)
 from app.routers import session
 from app.routers import login
 
@@ -16,14 +19,14 @@ def run_app() -> FastAPI:
     )
     if isinstance(loglevel, str):
         raise ValueError(f"Invalid loglevel {loglevel.upper()}")
-    logging.basicConfig(
-        level=loglevel,
-        datefmt="%m/%d/%Y %I:%M:%S %p",
-    )
+
+    logging.basicConfig(level=loglevel, datefmt="%m/%d/%Y %I:%M:%S %p")
+
     fastapi = FastAPI()
     fastapi.include_router(session.router)
     fastapi.include_router(login.router)
     fastapi.add_exception_handler(Exception, general_exception_handler)
+    fastapi.add_exception_handler(HTTPException, http_exception_handler)
     fastapi.mount("/static", StaticFiles(directory="static", html=True), name="static")
     return fastapi
 

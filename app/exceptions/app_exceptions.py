@@ -2,6 +2,7 @@ from urllib.parse import urlencode
 from typing import List, Optional
 from abc import ABC
 from configparser import ConfigParser
+from fastapi import HTTPException
 
 from app.exceptions.oidc_error_constants import (
     INVALID_REQUEST,
@@ -163,6 +164,6 @@ class InvalidStateException(Exception):
         super().__init__("State is invalid or expired")
 
 
-class LoginStateNotFoundException(Exception):
+class LoginStateNotFoundException(HTTPException):
     def __init__(self) -> None:
-        super().__init__("Login state not found or expired")
+        super().__init__(status_code=404, detail="Login state not found or expired")

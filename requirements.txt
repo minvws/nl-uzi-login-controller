@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=dev
 #
-anyio==3.6.2
+anyio==4.3.0
     # via starlette
 asn1crypto==1.5.1
     # via app (setup.py)

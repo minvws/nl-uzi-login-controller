@@ -10,7 +10,7 @@ asn1crypto==1.5.1
     # via app (setup.py)
 astroid==3.1.0
     # via pylint
-async-timeout==4.0.2
+async-timeout==4.0.3
     # via redis
 attrs==22.2.0
     # via pytest

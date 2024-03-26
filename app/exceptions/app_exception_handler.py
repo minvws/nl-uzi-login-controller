@@ -12,5 +12,8 @@ def general_exception_handler(_request: Request, exception: Exception) -> Respon
     return JSONResponse("Internal Server Error", status_code=500)
 
 
-def http_exception_handler(_request: Request, exception: HTTPException) -> Response:
-    return Response(status_code=exception.status_code, content=exception.detail)
+def http_exception_handler(_request: Request, exception: Exception) -> Response:
+    if isinstance(exception, HTTPException):
+        return Response(status_code=exception.status_code, content=exception.detail)
+
+    return JSONResponse("Internal Server Error", status_code=500)

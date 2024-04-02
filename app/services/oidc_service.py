@@ -111,7 +111,6 @@ class OidcService:
             headers={"Authorization": "Bearer " + resp.json()["access_token"]},
             verify=provider.verify_ssl,
         )
-        print(resp.text)
         validate_response_code(resp.status_code)
 
         if resp.headers["Content-Type"] != "application/jwt":

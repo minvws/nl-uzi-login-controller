@@ -9,6 +9,8 @@ from jwcrypto.jwk import JWK
 from jwcrypto.jwt import JWT
 from jwcrypto.common import JWException
 
+from app.exceptions.app_exceptions import InvalidJWTException
+
 JWT_EXP_MARGIN = 60
 
 JWT_NBF_MARGIN = 10
@@ -64,6 +66,7 @@ def from_jwe(
     jwe = JWE.from_jose_token(jwe_str)
     jwe.decrypt(jwt_priv_key)
     return from_jwt(jwt_pub_key, jwe.payload.decode("utf-8"))
+
 
 
 def create_jwt(

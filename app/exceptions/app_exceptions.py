@@ -27,6 +27,8 @@ class RedirectBaseException(Exception, ABC):
     """
 
     base_redirect_url: str = config.get("app", "redirect_url")
+    include_log_message_in_error_response: str = config.get("app", "include_log_message_in_error_response")
+
 
     def __init__(
         self,
@@ -39,22 +41,20 @@ class RedirectBaseException(Exception, ABC):
         self.error = error
         self.error_description = error_description
         self.state = state
+        self.log_message = log_message
         self.redirect_url = self._build_redirect_url(self.base_redirect_url)
 
     def _build_redirect_url(self, redirect_url: str) -> str:
-        params = (
-            urlencode(
-                {
-                    "state": self.state,
-                    "error": self.error,
-                    "error_description": self.error_description,
-                }
-            )
-            if self.error_description is not None
-            else urlencode({"state": self.state, "error": self.error})
-        )
+        params = {
+            "state": self.state,
+            "error": self.error,
+        }
+        if self.error_description is not None:
+            params["error_description"] = self.error_description
+        if self.log_message is not None:
+            params["error_details"] = self.log_message
 
-        return redirect_url + "?" + params
+        return redirect_url + "?" + urlencode(params)
 
 
 class ProviderNotFound(RedirectBaseException):
@@ -90,13 +90,13 @@ class ClientScopeException(RedirectBaseException):
 
 class InvalidJWTException(RedirectBaseException):
     def __init__(
-        self, state: str, log_message: str, error_description: Optional[str] = None
+        self, state: str, log_message: Optional[str] = None, error_description: Optional[str] = None
     ) -> None:
         super().__init__(
             error=ACCESS_DENIED,
             error_description=error_description,
             state=state,
-            log_message=log_message,
+            log_message=log_message if log_message is not None else error_description,
         )
 
 
@@ -163,6 +163,10 @@ class InvalidStateException(Exception):
         super().__init__("State is invalid or expired")
 
 
-class LoginStateNotFoundException(Exception):
+class LoginStateNotFoundException(RedirectBaseException):
     def __init__(self) -> None:
-        super().__init__("Login state not found or expired")
+        super().__init__(
+            error=ACCESS_DENIED,
+            state="NOTFOUND",
+            error_description="Login state not found or expired",
+        )

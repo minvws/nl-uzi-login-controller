@@ -27,8 +27,9 @@ class RedirectBaseException(Exception, ABC):
     """
 
     base_redirect_url: str = config.get("app", "redirect_url")
-    include_log_message_in_error_response: str = config.get("app", "include_log_message_in_error_response")
-
+    include_log_message_in_error_response: str = config.get(
+        "app", "include_log_message_in_error_response"
+    )
 
     def __init__(
         self,
@@ -90,7 +91,10 @@ class ClientScopeException(RedirectBaseException):
 
 class InvalidJWTException(RedirectBaseException):
     def __init__(
-        self, state: str, log_message: Optional[str] = None, error_description: Optional[str] = None
+        self,
+        state: str,
+        log_message: Optional[str] = None,
+        error_description: Optional[str] = None,
     ) -> None:
         super().__init__(
             error=ACCESS_DENIED,

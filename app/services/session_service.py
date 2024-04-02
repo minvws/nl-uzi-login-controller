@@ -326,7 +326,7 @@ class SessionService:
             logger.error(exception)
             raise InvalidJWTException(
                 state=state, log_message="Unable to decrypt userinfo JWE"
-            )
+            ) from exception
         if claims is None:
             raise InvalidJWTException(
                 state=state, log_message="Invalid claims from userinfo JWE"

@@ -1,3 +1,4 @@
+import logging
 from typing import Dict, Optional
 import requests
 
@@ -13,6 +14,8 @@ from app.models.oidc_provider import OIDCProvider, OIDCProviderDiscovery
 from app.models.authorization_params import AuthorizationParams
 from app.utils import nonce, json_fetch_url, validate_response_code
 from app.services.jwt_service import JwtService
+
+logger = logging.getLogger(__name__)
 
 
 class OidcService:
@@ -138,7 +141,10 @@ class OidcService:
         if oidc_provider_name in self._oidc_providers:
             provider = self._oidc_providers[oidc_provider_name]
             if provider.well_known_configuration is None:
-                self._update_provider_discovery(provider)
+                try:
+                    self._update_provider_discovery(provider)
+                except Exception as e:  # pylint: disable=broad-except
+                    logger.error("Failed to update provider discovery: %s", e)
             return provider
         return None
 

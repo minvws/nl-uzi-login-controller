@@ -320,7 +320,13 @@ class SessionService:
                 state=state, provider_name=oidc_provider_name
             )
 
-        claims = self._jwt_service.from_jwe(oidc_provider_public_key, userinfo_jwt)
+        try:
+            claims = self._jwt_service.from_jwe(oidc_provider_public_key, userinfo_jwt)
+        except Exception as exception:
+            logger.error(exception)
+            raise InvalidJWTException(
+                state=state, log_message="Unable to decrypt userinfo JWE"
+            ) from exception
         if claims is None:
             raise InvalidJWTException(
                 state=state, log_message="Invalid claims from userinfo JWE"
@@ -333,7 +339,7 @@ class SessionService:
         )
         if signed_userinfo is None:
             raise InvalidJWTException(
-                state=state, log_message="Invalid signed userinfo JWT"
+                state=state, error_description="Invalid signed_userinfo claim"
             )
 
         session.session_status = SessionStatus.DONE

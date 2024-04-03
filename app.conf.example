@@ -18,6 +18,8 @@ loglevel = debug
 
 oidc_login_method_feature = False
 
+include_log_message_in_error_response = True
+
 [session]
 jwt_issuer=nl-rdo-max-private
 jwt_issuer_crt_path=secrets/nl-rdo-max-private.crt

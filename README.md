@@ -29,4 +29,4 @@ repository. Inside it, run `npm install` followed by `npm run build`. Then repla
 `yivi-frontend-packages/yivi-frontend/dist/yivi.js` file.
 
 ### Docker containers
-Docker containers and their configurations are meant to be used for development purposes only. and not meant to be used in a production setup. 
+Docker containers and their configurations are meant to be used for development purposes only. And not meant to be used in a production setup. 

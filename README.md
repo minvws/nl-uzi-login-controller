@@ -27,3 +27,6 @@ The Yivi JavaScript package is included as a single static yivi.js file and an i
 update the Yivi version, clone the [yivi-frontend-packages/](https://github.com/privacybydesign/yivi-frontend-packages/)
 repository. Inside it, run `npm install` followed by `npm run build`. Then replace the `static/yivi.js` with the 
 `yivi-frontend-packages/yivi-frontend/dist/yivi.js` file.
+
+### Docker containers
+Docker containers and their configurations are meant to be used for development purposes only. and not meant to be used in a production setup. 

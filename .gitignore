@@ -12,4 +12,5 @@ app.egg-info
 *.pub
 *.srl
 *.pem
-
+!package.json
+!package-lock.json

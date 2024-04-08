@@ -5,12 +5,15 @@ from app.services.irma_service import IrmaService
 from app.services.jwt_service import JwtService
 from app.services.oidc_service import OidcService
 from app.services.session_service import SessionService
+from app.services.vite_manifest_service import ViteManifestService
+from app.services.template_service import TemplateService
 from app.storage.redis.redis_client import create_redis_client
 from app.utils import (
     load_jwk,
     file_content_raise_if_none,
     kid_from_certificate,
     load_oidc_well_known_config,
+    json_from_file,
 )
 
 config = ConfigParser()
@@ -53,6 +56,16 @@ if oidc_login_method_feature:
         http_backof_time=config.getint("app", "http_backof_time", fallback=5),
     )
 
+vite_manifest_service = ViteManifestService(
+    base_url=config["app"]["base_url"],
+    manifest=json_from_file(config.get("templates", "vite_manifest_path")),
+)
+
+template_service = TemplateService(
+    jinja_template_directory=config.get("templates", "jinja_path"),
+    vite_manifest_service=vite_manifest_service,
+)
+
 irma_service = IrmaService(
     irma_internal_server_url=config["irma"]["irma_internal_server_url"],
     irma_disclose_prefix=config["irma"]["irma_disclose_prefix"],
@@ -74,6 +87,7 @@ session_service_ = SessionService(
     register_api_crt=REGISTER_API_CRT,
     register_api_issuer=REGISTER_API_ISSUER,
     mock_enabled=config.getboolean("app", "mock_enabled"),
+    template_service=template_service,
     session_server_events_enabled=config.getboolean(
         "irma", "session_server_events_enabled", fallback=False
     ),

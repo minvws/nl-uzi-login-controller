@@ -13,7 +13,6 @@ from fastapi import Request, HTTPException
 from redis import Redis
 from jwcrypto.jwk import JWK
 from starlette.responses import RedirectResponse, Response
-from starlette.templating import Jinja2Templates
 
 from app.exceptions.app_exceptions import (
     GeneralServerException,
@@ -38,6 +37,7 @@ from app.models.session import (
 from app.services.irma_service import IrmaService
 from app.services.jwt_service import JwtService, from_jwt
 from app.services.oidc_service import OidcService
+from app.services.template_service import TemplateService
 from app.utils import rand_pass
 from app.models.login_state import LoginState
 
@@ -46,8 +46,6 @@ REDIS_SESSION_KEY = "session"
 logger = logging.getLogger(__name__)
 config = ConfigParser()
 config.read("app.conf")
-
-templates = Jinja2Templates(directory="jinja2")
 
 
 # pylint: disable=too-many-instance-attributes
@@ -68,10 +66,12 @@ class SessionService:
         register_api_crt: Optional[JWK],
         register_api_issuer: Optional[str],
         mock_enabled: bool,
+        template_service: TemplateService,
         session_server_events_enabled: bool = False,
         session_server_events_timeout: int = 2000,
         session_polling_interval: int = 1000,
     ):
+        self._templates = template_service.templates
         self._redis_client = redis_client
         self._irma_service = irma_service
         self._oidc_service = oidc_service
@@ -194,7 +194,7 @@ class SessionService:
             raise SessionNotFoundException(state=state)
 
         session = Session.parse_raw(session_str)
-        return templates.TemplateResponse(
+        return self._templates.TemplateResponse(
             "login.html",
             {
                 "request": request,

@@ -55,9 +55,8 @@ def kid_from_certificate(certificate: str) -> str:
     return base64.b64encode(sha.digest()).decode("utf-8")
 
 
-def read_json(file_path: str) -> Any:
-    data = json.loads(file_content_raise_if_none(file_path))
-    return data
+def json_from_file(file_path: str) -> Any:
+    return json.loads(file_content_raise_if_none(file_path))
 
 
 def enforce_cert_newlines(cert_data: str) -> str:
@@ -101,7 +100,7 @@ def json_fetch_url(
 def load_oidc_well_known_config(
     providers_config_path: str, environment: str
 ) -> Dict[str, OIDCProvider]:
-    providers = read_json(providers_config_path)
+    providers = json_from_file(providers_config_path)
     well_known_configs = {}
 
     for provider in providers:

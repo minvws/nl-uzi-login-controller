@@ -16,6 +16,7 @@ clean_venv: ## Remove virtual environment
 
 run:
 	docker-compose up -d
+	npm run build
 	. .venv/bin/activate && ${env} python -m app.main
 
 pip-sync: ## synchronizes the .venv with the state of requirements.txt
@@ -23,7 +24,10 @@ pip-sync: ## synchronizes the .venv with the state of requirements.txt
 	. .venv/bin/activate && ${env} pip-sync
 	. .venv/bin/activate && ${env} pip install -e .
 
-setup: venv app.conf oidc-providers-list.json
+setup-npm:
+	scripts/./setup-npm.sh
+
+setup: venv app.conf oidc-providers-list.json setup-npm
 
 app.conf:
 	cp app.conf.example app.conf

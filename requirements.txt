@@ -18,7 +18,7 @@ attrs==22.2.0
     # via pytest
 autoflake==2.0.1
     # via app (setup.py)
-bandit==1.7.4
+bandit==1.7.8
     # via app (setup.py)
 black==24.3.0
     # via app (setup.py)

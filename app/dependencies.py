@@ -21,7 +21,7 @@ environment = config.get("app", "environment")
 redirect_url_ = config.get("app", "redirect_url")
 
 _redis_client = create_redis_client(config["redis"])
-
+_jwt_issuer_cert = load_jwk(config["session"]["jwt_issuer_crt_path"])
 
 oidc_login_method_feature = config.getboolean("app", "oidc_login_method_feature")
 
@@ -69,7 +69,7 @@ session_service_ = SessionService(
     redis_namespace=config["redis"]["namespace"],
     expires_in_s=config.getint("redis", "expire", fallback=60),
     jwt_issuer=config["session"]["jwt_issuer"],
-    jwt_issuer_crt_path=config["session"]["jwt_issuer_crt_path"],
+    jwt_issuer_crt=_jwt_issuer_cert,
     jwt_audience=config["session"]["jwt_audience"],
     register_api_crt=REGISTER_API_CRT,
     register_api_issuer=REGISTER_API_ISSUER,

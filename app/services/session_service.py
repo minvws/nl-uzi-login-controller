@@ -1,7 +1,7 @@
 import json
 import logging
 import time
-from typing import Union, Optional
+from typing import Union, Optional, Dict, Any
 import secrets
 import hashlib
 import base64
@@ -11,7 +11,6 @@ from configparser import ConfigParser
 from fastapi.responses import JSONResponse
 from fastapi import Request, HTTPException
 from redis import Redis
-from jwcrypto.jwt import JWT
 from jwcrypto.jwk import JWK
 from starlette.responses import RedirectResponse, Response
 from starlette.templating import Jinja2Templates
@@ -29,9 +28,15 @@ from app.exceptions.app_exceptions import (
     ProviderPublicKeyNotFound,
 )
 
-from app.models.session import Session, SessionType, SessionStatus, SessionLoa
+from app.models.session import (
+    Session,
+    SessionType,
+    SessionStatus,
+    SessionLoa,
+    parse_session_type,
+)
 from app.services.irma_service import IrmaService
-from app.services.jwt_service import JwtService
+from app.services.jwt_service import JwtService, from_jwt
 from app.services.oidc_service import OidcService
 from app.utils import rand_pass
 from app.models.login_state import LoginState
@@ -58,7 +63,7 @@ class SessionService:
         redis_namespace: str,
         expires_in_s: int,
         jwt_issuer: str,
-        jwt_issuer_crt_path: str,
+        jwt_issuer_crt: JWK,
         jwt_audience: str,
         register_api_crt: Optional[JWK],
         register_api_issuer: Optional[str],
@@ -75,9 +80,8 @@ class SessionService:
         self._redis_namespace = redis_namespace
         self._expires_in_s = expires_in_s
         self._jwt_issuer = jwt_issuer
+        self._jwt_issuer_crt = jwt_issuer_crt
         self._jwt_audience = jwt_audience
-        with open(jwt_issuer_crt_path, encoding="utf-8") as file:
-            self._jwt_issuer_crt_path = JWK.from_pem(file.read().encode("utf-8"))
         self._mock_enabled = mock_enabled
         self._session_server_events_enabled = session_server_events_enabled
         self._session_server_events_timeout = session_server_events_timeout
@@ -86,9 +90,9 @@ class SessionService:
         self._register_api_issuer = register_api_issuer
 
     def create(self, raw_jwt: str) -> JSONResponse:
-        jwt = JWT(
-            jwt=raw_jwt,
-            key=self._jwt_issuer_crt_path,
+        claims = from_jwt(
+            jwt_pub_key=self._jwt_issuer_crt,
+            jwt_str=raw_jwt,
             check_claims={
                 "iss": self._jwt_issuer,
                 "aud": self._jwt_audience,
@@ -96,13 +100,8 @@ class SessionService:
                 "nbf": time.time(),
             },
         )
-        claims = json.loads(jwt.claims)
-        session = Session(
-            exchange_token=rand_pass(64),
-            session_status=SessionStatus.INITIALIZED,
-            **claims,
-        )
 
+        session = self._create_session_from_claims(claims)
         if session.session_type == SessionType.IRMA:
             session.irma_disclose_response = self._irma_service.create_disclose_session(
                 [
@@ -395,3 +394,21 @@ class SessionService:
 
         login_state = LoginState(**json.loads(login_state_from_redis))
         return login_state
+
+    def _create_session_from_claims(
+        self, claims: Optional[Dict[str, Any]] = None
+    ) -> Session:
+        if claims is None:
+            raise HTTPException(status_code=400, detail="Invalid session JWT")
+
+        session_type = parse_session_type(claims.get("session_type"))
+        if session_type is None:
+            raise HTTPException(status_code=400, detail="Invalid session JWT")
+
+        return Session(
+            exchange_token=rand_pass(64),
+            session_status=SessionStatus.INITIALIZED,
+            session_type=session_type,
+            login_title=claims["login_title"],
+            oidc_provider_name=claims.get("oidc_provider_name"),
+        )

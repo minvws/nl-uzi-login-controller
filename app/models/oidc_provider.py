@@ -49,7 +49,7 @@ class OIDCProviderDiscovery(BaseModel):
     backchannel_logout_session_supported: Optional[bool]
 
 
-class OIDCProvider(BaseModel):
+class OIDCProvider:
     client_id: str
     client_scopes: List[str]
     well_known_configuration: Optional[OIDCProviderDiscovery] = Field(
@@ -59,3 +59,21 @@ class OIDCProvider(BaseModel):
     client_secret: Optional[str] = None
     verify_ssl: bool = True
     oidc_provider_public_key: JWK
+
+    def __init__(
+        self,
+        client_id: str,
+        client_scopes: List[str],
+        well_known_configuration: Optional[OIDCProviderDiscovery],
+        issuer_url: str,
+        client_secret: Optional[str],
+        verify_ssl: bool,
+        oidc_provider_public_key: JWK,
+    ) -> None:
+        self.client_id = client_id
+        self.client_scopes = client_scopes
+        self.well_known_configuration = well_known_configuration
+        self.issuer_url = issuer_url
+        self.client_secret = client_secret
+        self.verify_ssl = verify_ssl
+        self.oidc_provider_public_key = oidc_provider_public_key

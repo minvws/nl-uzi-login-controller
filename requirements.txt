@@ -91,7 +91,7 @@ platformdirs==4.2.0
     # via
     #   black
     #   pylint
-pluggy==1.0.0
+pluggy==1.4.0
     # via pytest
 puzi @ git+ssh://git@github.com/minvws/pUzi-python
     # via app (setup.py)

@@ -19,6 +19,7 @@ from app.utils import (
 config = ConfigParser()
 config.read("app.conf")
 
+http_timeout = config.getint("app", "http_timeout", fallback=30)
 environment = config.get("app", "environment")
 
 redirect_url_ = config.get("app", "redirect_url")
@@ -41,7 +42,11 @@ if oidc_login_method_feature:
 
     # fetch and load providers
     providers_conf_path = config.get("oidc_provider", "config_list_path")
-    oidc_providers = load_oidc_well_known_config(providers_conf_path, environment)
+    oidc_providers = load_oidc_well_known_config(
+        providers_config_path=providers_conf_path,
+        environment=environment,
+        http_timout=http_timeout,
+    )
 
     JWT_SERVICE = JwtService(
         jwt_priv_key=jwt_priv_key, crt_kid=kid_from_certificate(jwt_crt_content)
@@ -50,7 +55,7 @@ if oidc_login_method_feature:
     OIDC_SERVICE = OidcService(
         oidc_providers=oidc_providers,
         redirect_uri=config["oidc_provider"]["redirect_uri"],
-        http_timeout=config.getint("app", "http_timeout", fallback=30),
+        http_timeout=http_timeout,
         jwt_service=JWT_SERVICE,
         http_retries=config.getint("app", "http_retries", fallback=20),
         http_backof_time=config.getint("app", "http_backof_time", fallback=5),
@@ -70,7 +75,7 @@ irma_service = IrmaService(
     irma_internal_server_url=config["irma"]["irma_internal_server_url"],
     irma_disclose_prefix=config["irma"]["irma_disclose_prefix"],
     irma_revocation=bool(config["irma"]["irma_revocation"]),
-    http_timeout=config.getint("app", "http_timeout", fallback=30),
+    http_timeout=http_timeout,
 )
 
 session_service_ = SessionService(

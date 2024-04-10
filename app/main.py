@@ -9,8 +9,11 @@ from app.exceptions.app_exception_handler import (
     general_exception_handler,
     http_exception_handler,
 )
+from app.models.docs_config import DocsConfig
 from app.routers import session
 from app.routers import login
+from app.routers.docs_router import DocsRouter
+from app.utils import get_version_from_config
 
 
 def run_app() -> FastAPI:
@@ -22,9 +25,20 @@ def run_app() -> FastAPI:
 
     logging.basicConfig(level=loglevel, datefmt="%m/%d/%Y %I:%M:%S %p")
 
-    fastapi = FastAPI()
+    version = get_version_from_config(config)
+    docs_config = DocsConfig.from_config(config)
+
+    fastapi = FastAPI(
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=docs_config.openapi_endpoint,
+        version=version,
+    )
     fastapi.include_router(session.router)
     fastapi.include_router(login.router)
+    if docs_config.enabled:
+        docs_router = DocsRouter(docs_config)
+        fastapi.include_router(docs_router.get_docs_router())
     fastapi.add_exception_handler(Exception, general_exception_handler)
     fastapi.add_exception_handler(HTTPException, http_exception_handler)
     fastapi.mount("/static", StaticFiles(directory="static", html=True), name="static")

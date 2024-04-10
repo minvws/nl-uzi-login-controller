@@ -30,7 +30,18 @@ export default defineConfig({
     }),
     viteStaticCopy({
       targets: [
-
+        {
+          src: resolve(__dirname, 'node_modules','swagger-ui-dist','swagger-ui-bundle.js'),
+          dest: resolve(__dirname,'static','assets')
+        },
+        {
+          src: resolve(__dirname, 'node_modules','swagger-ui-dist','swagger-ui.css'),
+          dest: resolve(__dirname,'static','assets')
+        },
+        {
+          src: resolve(__dirname, 'node_modules','redoc','bundles','redoc.standalone.js'),
+          dest: resolve(__dirname,'static','assets')
+        }
       ]
     })
   ]

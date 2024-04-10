@@ -5,7 +5,7 @@ import json
 import secrets
 import time
 from os import path
-from typing import Union, Any, Dict
+from typing import Union, Any, Dict, Optional
 from configparser import ConfigParser
 from Cryptodome.IO import PEM
 from Cryptodome.Hash import SHA256
@@ -14,11 +14,6 @@ import requests
 
 from app.models.oidc_provider import OIDCProvider
 from app.exceptions.app_exceptions import UnexpectedResponseCode
-
-config = ConfigParser()
-config.read("app.conf")
-
-HTTP_TIMEOUT = int(config.get("app", "http_timeout"))
 
 
 def rand_pass(size: int) -> str:
@@ -78,7 +73,11 @@ def validate_response_code(status_code: int) -> Any:
 
 
 def json_fetch_url(
-    url: str, backof_time: int = 0, retries: int = 0, verify_ssl: bool = True
+    url: str,
+    backoff_time: int = 0,
+    retries: int = 0,
+    verify_ssl: bool = True,
+    http_timeout: int = 60,
 ) -> Any:
     retry = 0
     previous_exception = requests.ConnectionError(
@@ -87,8 +86,8 @@ def json_fetch_url(
     while retry <= retries:
         try:
             if retry > 0:
-                time.sleep((backof_time + random.randint(1, 3)) ^ retry)
-            response = requests.get(url, timeout=HTTP_TIMEOUT, verify=verify_ssl)
+                time.sleep((backoff_time + random.randint(1, 3)) ^ retry)
+            response = requests.get(url, timeout=http_timeout, verify=verify_ssl)
             validate_response_code(response.status_code)
             return response.json()
         except requests.ConnectionError as request_exception:
@@ -98,7 +97,7 @@ def json_fetch_url(
 
 
 def load_oidc_well_known_config(
-    providers_config_path: str, environment: str
+    providers_config_path: str, environment: str, http_timout: int
 ) -> Dict[str, OIDCProvider]:
     providers = json_from_file(providers_config_path)
     well_known_configs = {}
@@ -120,7 +119,9 @@ def load_oidc_well_known_config(
 
         try:
             discovery = json_fetch_url(
-                url=provider_config_url, verify_ssl=provider["verify_ssl"]
+                url=provider_config_url,
+                verify_ssl=provider["verify_ssl"],
+                http_timeout=http_timout,
             )
         except requests.ConnectionError:
             pass
@@ -137,3 +138,17 @@ def load_oidc_well_known_config(
         well_known_configs[provider["name"]] = provider_data
 
     return well_known_configs
+
+
+def get_version_from_file(file_path: Optional[str] = None) -> str:
+    _default_version = "v0.0.0"
+
+    if file_path is None:
+        return _default_version
+
+    _version_dict = json_from_file(file_path)
+    return _version_dict.get("version", _default_version)
+
+
+def get_version_from_config(config: ConfigParser) -> str:
+    return get_version_from_file(config.get("app", "version_file_path"))

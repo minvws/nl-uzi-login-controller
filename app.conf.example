@@ -19,6 +19,7 @@ loglevel = debug
 oidc_login_method_feature = False
 
 include_log_message_in_error_response = True
+version_file_path = static/version.json
 
 [session]
 jwt_issuer=nl-rdo-max-private
@@ -73,3 +74,9 @@ redirect_uri = http://localhost:8001/login/oidc/callback
 # register certificate path
 register_api_crt_path = secrets/nl-uzipoc-register-api.crt
 register_api_jwt_issuer = max
+
+[docs]
+enabled = True
+swagger_ui_endpoint = /docs
+redoc_endpoint = /redoc
+openapi_endpoint = /openapi.json

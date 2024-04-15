@@ -53,7 +53,7 @@ fastapi==0.110.1
     # via app (setup.py)
 gitdb==4.0.10
     # via gitpython
-gitpython==3.1.41
+gitpython==3.1.43
     # via bandit
 h11==0.14.0
     # via uvicorn

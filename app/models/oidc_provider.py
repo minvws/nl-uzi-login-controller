@@ -1,11 +1,13 @@
 from typing import Optional, List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from jwcrypto.jwk import JWK
 
 
 class OIDCProviderDiscovery(BaseModel):
+    model_config = ConfigDict(extra="allow")  # type: ignore
+
     issuer: str
     authorization_endpoint: str
     token_endpoint: str

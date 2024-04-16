@@ -75,6 +75,10 @@ redirect_uri = http://localhost:8001/login/oidc/callback
 register_api_crt_path = secrets/nl-uzipoc-register-api.crt
 register_api_jwt_issuer = max
 
+[templates]
+jinja_path = jinja2
+vite_manifest_path = static/assets/manifest.json
+
 [docs]
 enabled = True
 swagger_ui_endpoint = /docs

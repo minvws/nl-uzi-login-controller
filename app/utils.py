@@ -11,7 +11,6 @@ from Cryptodome.IO import PEM
 from Cryptodome.Hash import SHA256
 from jwcrypto.jwk import JWK
 import requests
-from pydantic import create_model
 
 from app.models.oidc_provider import OIDCProvider, OIDCProviderDiscovery
 from app.exceptions.app_exceptions import UnexpectedResponseCode

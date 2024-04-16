@@ -6,7 +6,7 @@ from jwcrypto.jwk import JWK
 
 
 class OIDCProviderDiscovery(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="allow")
 
     issuer: str
     authorization_endpoint: str

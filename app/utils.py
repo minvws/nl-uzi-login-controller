@@ -115,7 +115,7 @@ def load_oidc_well_known_config(
             else True
         )
         oidc_provider_public_key = load_jwk(provider["oidc_provider_public_key_path"])
-        discovery = None
+        discovery: Union[dict, None] = None
 
         try:
             discovery = json_fetch_url(

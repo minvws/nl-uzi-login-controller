@@ -14,13 +14,13 @@ class OIDCProviderDiscovery(BaseModel):
     userinfo_endpoint: str
     jwks_uri: str
     registration_endpoint: Optional[str] = None
-    scopes_supported: List[str] = None
-    response_types_supported: List[str] = None
+    scopes_supported: List[str]
+    response_types_supported: List[str]
     response_modes_supported: Optional[List[str]] = None
     grant_types_supported: Optional[List[str]] = None
     cr_values_supported: Optional[List[str]] = None
-    subject_types_supported: List[str] = None
-    id_token_signing_alg_values_supported: List[str] = None
+    subject_types_supported: List[str]
+    id_token_signing_alg_values_supported: List[str]
     id_token_encryption_alg_values_supported: Optional[List[str]] = None
     id_token_encryption_enc_values_supported: Optional[List[str]] = None
     userinfo_signing_alg_values_supported: Optional[List[str]] = None

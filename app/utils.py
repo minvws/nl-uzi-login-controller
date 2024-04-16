@@ -129,7 +129,9 @@ def load_oidc_well_known_config(
 
         provider_data = OIDCProvider(
             verify_ssl=verify_ssl,
-            well_known_configuration=(OIDCProviderDiscovery(**discovery) if discovery else None),
+            well_known_configuration=(
+                OIDCProviderDiscovery(**discovery) if discovery else None
+            ),
             issuer_url=provider["issuer"],
             client_id=provider["client_id"],
             client_secret=client_secret,

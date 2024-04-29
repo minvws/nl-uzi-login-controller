@@ -155,7 +155,7 @@ typing-extensions==4.11.0
     #   starlette
 urllib3==2.2.1
     # via requests
-uvicorn==0.20.0
+uvicorn==0.29.0
     # via app (setup.py)
 
 # The following packages are considered to be unsafe in a requirements file:

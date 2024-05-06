@@ -90,6 +90,9 @@ class OidcService:
             raise ProviderNotFound(max_state)
 
         provider_well_known_config = provider.well_known_configuration
+        if provider_well_known_config is None:
+            raise ProviderConfigNotFound(max_state)
+
         client_id = provider.client_id
         client_secret = provider.client_secret
 
@@ -114,7 +117,6 @@ class OidcService:
                     "exp": int(time.time()),
                 }
             )
-        print(data)
 
         if client_secret is not None and isinstance(client_secret, str):
             data["client_secret"] = client_secret

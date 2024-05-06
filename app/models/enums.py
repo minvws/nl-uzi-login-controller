@@ -1,5 +1,6 @@
 # pylint:disable=no-member
 from enum import Enum
+from typing import List
 
 
 class TokenAuthenticationMethods(str, Enum):
@@ -7,5 +8,5 @@ class TokenAuthenticationMethods(str, Enum):
     NONE = "none"
 
     @classmethod
-    def to_list(cls):
+    def to_list(cls) -> List[str]:
         return list(map(lambda member: member.value, cls._member_map_.values()))

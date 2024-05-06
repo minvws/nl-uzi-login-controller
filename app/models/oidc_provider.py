@@ -4,6 +4,8 @@ from pydantic import BaseModel, Field, ConfigDict
 
 from jwcrypto.jwk import JWK
 
+from app.models.enums import TokenAuthenticationMethods
+
 
 class OIDCProviderDiscovery(BaseModel):
     model_config = ConfigDict(extra="allow")
@@ -61,6 +63,7 @@ class OIDCProvider:
     client_secret: Optional[str] = None
     verify_ssl: bool = True
     oidc_provider_public_key: JWK
+    token_authentication_method: str
 
     def __init__(
         self,
@@ -71,6 +74,7 @@ class OIDCProvider:
         client_secret: Optional[str],
         verify_ssl: bool,
         oidc_provider_public_key: JWK,
+        token_authentication_method: str,
     ) -> None:
         self.client_id = client_id
         self.client_scopes = client_scopes
@@ -79,3 +83,9 @@ class OIDCProvider:
         self.client_secret = client_secret
         self.verify_ssl = verify_ssl
         self.oidc_provider_public_key = oidc_provider_public_key
+        try:
+            self.token_authentication_method = getattr(
+                TokenAuthenticationMethods, token_authentication_method.upper()
+            )
+        except AttributeError:
+            print(f"{token_authentication_method} is not a valid method, make sure token_authentication_method is present in clients configuration with values {TokenAuthenticationMethods.to_list()}")

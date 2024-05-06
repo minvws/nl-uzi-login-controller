@@ -89,5 +89,5 @@ class OIDCProvider:
             )
         except AttributeError:
             print(
-                f"{token_authentication_method} is not a valid method, make sure token_authentication_method is present in clients configuration with values {TokenAuthenticationMethods.to_list()}"
+                f"{token_authentication_method} is not a valid method, make sure token_authentication_method is present in oidc-providers file with values {TokenAuthenticationMethods.to_list()}"
             )

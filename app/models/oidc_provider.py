@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, List
 
 from pydantic import BaseModel, Field, ConfigDict
@@ -5,6 +6,8 @@ from pydantic import BaseModel, Field, ConfigDict
 from jwcrypto.jwk import JWK
 
 from app.models.enums import TokenAuthenticationMethods
+
+logger = logging.getLogger(__name__)
 
 
 class OIDCProviderDiscovery(BaseModel):
@@ -88,6 +91,8 @@ class OIDCProvider:
                 TokenAuthenticationMethods, token_authentication_method.upper()
             )
         except AttributeError:
-            print(
-                f"{token_authentication_method} is not a valid method, make sure token_authentication_method is present in oidc-providers file with values {TokenAuthenticationMethods.to_list()}"
+            logger.warning(
+                " %s is not a valid method, make sure token_authentication_method is present in oidc-providers file with values %s",
+                token_authentication_method,
+                TokenAuthenticationMethods.to_list(),
             )

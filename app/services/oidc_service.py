@@ -1,15 +1,19 @@
 import logging
+import time
 from typing import Dict, Optional
 import requests
 
 from fastapi.exceptions import RequestValidationError
 from jwcrypto.jwk import JWK
 from starlette.responses import RedirectResponse
+
+from app.constants import CLIENT_ASSERTION_TYPE
 from app.exceptions.app_exceptions import (
     ProviderConfigNotFound,
     ProviderNotFound,
     ClientScopeException,
 )
+from app.models.enums import TokenAuthenticationMethods
 from app.models.oidc_provider import OIDCProvider, OIDCProviderDiscovery
 from app.models.authorization_params import AuthorizationParams
 from app.utils import nonce, json_fetch_url, validate_response_code
@@ -86,6 +90,9 @@ class OidcService:
             raise ProviderNotFound(max_state)
 
         provider_well_known_config = provider.well_known_configuration
+        if provider_well_known_config is None:
+            raise ProviderConfigNotFound(max_state)
+
         client_id = provider.client_id
         client_secret = provider.client_secret
 
@@ -96,6 +103,20 @@ class OidcService:
             "grant_type": "authorization_code",
             "redirect_uri": self._redirect_uri,
         }
+
+        if (
+            provider.token_authentication_method
+            == TokenAuthenticationMethods.PRIVATE_KEY_JWT.value
+        ):
+            data["client_assertion_type"] = CLIENT_ASSERTION_TYPE
+            data["client_assertion"] = self._jwt_service.create_jwt(
+                {
+                    "iss": provider.client_id,
+                    "sub": provider.client_id,
+                    "aud": provider_well_known_config.issuer,
+                    "exp": int(time.time()),
+                }
+            )
 
         if client_secret is not None and isinstance(client_secret, str):
             data["client_secret"] = client_secret

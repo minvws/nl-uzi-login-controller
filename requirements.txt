@@ -103,7 +103,7 @@ pydantic==2.7.0
     # via fastapi
 pydantic-core==2.18.2
     # via pydantic
-pyflakes==3.0.1
+pyflakes==3.2.0
     # via autoflake
 pylint==3.1.0
     # via app (setup.py)

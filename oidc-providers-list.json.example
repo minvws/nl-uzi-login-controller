@@ -5,7 +5,8 @@
         "client_id": "c512596d-43e0-430a-8926-6e5a53cb9ebc",
         "scopes": ["openid"],
         "verify_ssl": false,
-        "oidc_provider_public_key_path": "secrets/nl-rdo-uzipoc-oidc-provider.pub"
+        "oidc_provider_public_key_path": "secrets/nl-rdo-uzipoc-oidc-provider.pub",
+        "token_authentication_method": "private_key_jwt"
     },
      {
         "name": "identities",
@@ -13,6 +14,7 @@
         "client_id": "c512596d-43e0-430a-8926-6e5a53cb9ebc",
         "scopes": ["openid", "identities"],
         "verify_ssl": false,
-        "oidc_provider_public_key_path": "secrets/nl-rdo-uzipoc-oidc-provider.pub"
+        "oidc_provider_public_key_path": "secrets/nl-rdo-uzipoc-oidc-provider.pub",
+        "token_authentication_method": "private_key_jwt"
     }
 ]

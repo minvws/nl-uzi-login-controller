@@ -136,7 +136,7 @@ def load_oidc_well_known_config(
             client_secret=client_secret,
             client_scopes=provider["scopes"],
             oidc_provider_public_key=oidc_provider_public_key,
-            token_authentication_method=provider["token_authentication_method"],
+            token_endpoint_auth_method=provider["token_endpoint_auth_method"],
         )
         well_known_configs[provider["name"]] = provider_data
 

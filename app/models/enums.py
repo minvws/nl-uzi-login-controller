@@ -3,7 +3,7 @@ from enum import Enum
 from typing import List
 
 
-class TokenAuthenticationMethods(str, Enum):
+class TokenEndpointAuthenticationMethods(str, Enum):
     PRIVATE_KEY_JWT = "private_key_jwt"
     NONE = "none"
 

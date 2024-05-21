@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, ConfigDict
 
 from jwcrypto.jwk import JWK
 
-from app.models.enums import TokenAuthenticationMethods
+from app.models.enums import TokenEndpointAuthenticationMethods
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class OIDCProvider:
     client_secret: Optional[str] = None
     verify_ssl: bool = True
     oidc_provider_public_key: JWK
-    token_authentication_method: str
+    token_endpoint_auth_method: str
 
     def __init__(
         self,
@@ -77,7 +77,7 @@ class OIDCProvider:
         client_secret: Optional[str],
         verify_ssl: bool,
         oidc_provider_public_key: JWK,
-        token_authentication_method: str,
+        token_endpoint_auth_method: str,
     ) -> None:
         self.client_id = client_id
         self.client_scopes = client_scopes
@@ -87,12 +87,12 @@ class OIDCProvider:
         self.verify_ssl = verify_ssl
         self.oidc_provider_public_key = oidc_provider_public_key
         try:
-            self.token_authentication_method = getattr(
-                TokenAuthenticationMethods, token_authentication_method.upper()
+            self.token_endpoint_auth_method = getattr(
+                TokenEndpointAuthenticationMethods, token_endpoint_auth_method.upper()
             )
         except AttributeError:
             logger.warning(
-                " %s is not a valid method, make sure token_authentication_method is present in oidc-providers file with values %s",
-                token_authentication_method,
-                TokenAuthenticationMethods.to_list(),
+                " %s is not a valid method, make sure token_endpoint_auth_method is present in oidc-providers file with values %s",
+                token_endpoint_auth_method,
+                TokenEndpointAuthenticationMethods.to_list(),
             )

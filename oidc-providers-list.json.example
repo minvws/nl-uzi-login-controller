@@ -6,7 +6,7 @@
         "scopes": ["openid"],
         "verify_ssl": false,
         "oidc_provider_public_key_path": "secrets/nl-rdo-uzipoc-oidc-provider.pub",
-        "token_authentication_method": "private_key_jwt"
+        "token_endpoint_auth_method": "private_key_jwt"
     },
      {
         "name": "identities",
@@ -15,6 +15,6 @@
         "scopes": ["openid", "identities"],
         "verify_ssl": false,
         "oidc_provider_public_key_path": "secrets/nl-rdo-uzipoc-oidc-provider.pub",
-        "token_authentication_method": "private_key_jwt"
+        "token_endpoint_auth_method": "private_key_jwt"
     }
 ]

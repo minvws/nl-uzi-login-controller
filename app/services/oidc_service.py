@@ -13,7 +13,7 @@ from app.exceptions.app_exceptions import (
     ProviderNotFound,
     ClientScopeException,
 )
-from app.models.enums import TokenAuthenticationMethods
+from app.models.enums import TokenEndpointAuthenticationMethods
 from app.models.oidc_provider import OIDCProvider, OIDCProviderDiscovery
 from app.models.authorization_params import AuthorizationParams
 from app.utils import nonce, json_fetch_url, validate_response_code
@@ -105,8 +105,8 @@ class OidcService:
         }
 
         if (
-            provider.token_authentication_method
-            == TokenAuthenticationMethods.PRIVATE_KEY_JWT.value
+            provider.token_endpoint_auth_method
+            == TokenEndpointAuthenticationMethods.PRIVATE_KEY_JWT.value
         ):
             data["client_assertion_type"] = CLIENT_ASSERTION_TYPE
             data["client_assertion"] = self._jwt_service.create_jwt(

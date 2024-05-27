@@ -10,7 +10,7 @@ anyio==4.3.0
     # via starlette
 asn1crypto==1.5.1
     # via app (setup.py)
-astroid==3.1.0
+astroid==3.2.2
     # via pylint
 async-timeout==4.0.3
     # via redis

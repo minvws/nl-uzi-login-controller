@@ -49,7 +49,7 @@ exceptiongroup==1.2.1
     # via
     #   anyio
     #   pytest
-fastapi==0.110.1
+fastapi==0.111.0
     # via app (setup.py)
 gitdb==4.0.11
     # via gitpython

@@ -38,8 +38,8 @@ cert =
 cafile =
 
 [irma]
-irma_internal_server_url = https://irma.uzipoc.nl
-irma_disclose_prefix = irma-demo.uzipoc-cibg.uzi-2
+irma_internal_server_url = https://yivi.proeftuin.uzi-online.rdobeheer.nl
+irma_disclose_prefix = irma-demo.uzipoc-cibg.uzi-proeftuin
 irma_revocation = true
 # If session_server_events_enabled = True: use Server Sent Events for checking the status of the Yivi session during login
 session_server_events_enabled = True

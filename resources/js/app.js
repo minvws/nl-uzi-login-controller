@@ -47,7 +47,7 @@ function init()
     yivi.use(YiviClient);
     yivi.start()
         .then(() => {
-            window.location.assign(data.redirect_url + '?state=' + data.state);
+            window.location.assign(data.redirect_url + '?state=' + data.state + '&exchange_token=' + data.exchange_token);
         })
         .catch((err) => {
             if (err === 'Aborted') {

@@ -1,11 +1,9 @@
 name: Rebuild python virtual env
 
 on:
-  create:
+  push:
     tags:
       - v*
-  push:
-    branches: [ build-venv ]
 
 jobs:
   build:

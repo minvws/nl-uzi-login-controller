@@ -53,6 +53,9 @@ def kwargs_from_config() -> dict:
         "proxy_headers": True,
         "workers": config.getint("uvicorn", "workers"),
     }
+    reload_includes = config.get("uvicorn", "reload_includes", fallback=None)
+    if reload_includes is not None and reload_includes != "":
+        kwargs["reload_includes"] = config.get("uvicorn", "reload_includes").split(" ")
     if config.getboolean("uvicorn", "use_ssl"):
         kwargs["ssl_keyfile"] = (
             config.get("uvicorn", "base_dir") + "/" + config.get("uvicorn", "key_file")

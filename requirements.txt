@@ -111,7 +111,7 @@ pytest==8.2.1
     # via app (setup.py)
 pyyaml==6.0.1
     # via bandit
-redis==4.5.4
+redis==5.0.4
     # via app (setup.py)
 requests==2.32.2
     # via app (setup.py)

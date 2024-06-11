@@ -14,6 +14,7 @@ from redis import Redis
 from jwcrypto.jwk import JWK
 from starlette.responses import RedirectResponse, Response
 
+from app.constants import EXP_LEAP_SECONDS, NBF_LEAP_SECONDS
 from app.exceptions.app_exceptions import (
     GeneralServerException,
     IrmaServerException,
@@ -89,7 +90,8 @@ class SessionService:
         self._register_api_crt = register_api_crt
         self._register_api_issuer = register_api_issuer
 
-    def create(self, raw_jwt: str) -> JSONResponse:
+    def create(self, request: Request) -> JSONResponse:
+        raw_jwt = self._get_token_from_header(request)
         claims = from_jwt(
             jwt_pub_key=self._jwt_issuer_crt,
             jwt_str=raw_jwt,
@@ -125,7 +127,26 @@ class SessionService:
         irma_session = json.loads(session.irma_disclose_response)
         return JSONResponse(irma_session["sessionPtr"])
 
-    def status(self, exchange_token: str) -> JSONResponse:
+    def status(self, request: Request) -> Response:
+        exchange_token_jwt = self._get_token_from_header(request)
+        if self._oidc_service is None or self._jwt_service is None:
+            return Response(status_code=404)
+
+        exchange_token_claims = self._jwt_service.from_jwt(
+            jwt_pub_key=self._jwt_issuer_crt,
+            jwt=exchange_token_jwt,
+            check_claims={
+                "iss": self._jwt_issuer,
+                "aud": self._jwt_audience,
+                "nbf": int(time.time()) - NBF_LEAP_SECONDS,
+                "exp": int(time.time()) + EXP_LEAP_SECONDS,
+            },
+        )
+        if exchange_token_claims is None:
+            logger.error("Exchange token claims are invalid")
+            raise GeneralServerException()
+
+        exchange_token = exchange_token_claims.get("exchange_token", "")
         session = self._token_to_session(exchange_token)
         self._poll_status_irma(session)
         return JSONResponse(session.session_status)
@@ -171,8 +192,33 @@ class SessionService:
                 )
                 session.session_status = SessionStatus.DONE
 
-    def result(self, exchange_token: str) -> Response:
-        if self._mock_enabled and exchange_token == "mocked_exchange_token":
+    def result(self, request: Request) -> Response:
+        exchange_token_jwt = self._get_token_from_header(request)
+        if self._oidc_service is None or self._jwt_service is None:
+            return Response(status_code=404)
+
+        if self._register_api_crt is None:
+            logger.error("Register api crt is not found")
+            raise GeneralServerException()
+
+        exchange_token_claims = self._jwt_service.from_jwt(
+            jwt_pub_key=self._register_api_crt,
+            jwt=exchange_token_jwt,
+            check_claims={
+                "iss": self._register_api_issuer,
+                "aud": self._jwt_audience,
+                "nbf": int(time.time()) - NBF_LEAP_SECONDS,
+                "exp": int(time.time()) + EXP_LEAP_SECONDS,
+            },
+        )
+
+        if exchange_token_claims is None:
+            logger.error("Exchange token claims are invalid")
+            raise GeneralServerException()
+
+        exchange_token: str = exchange_token_claims["exchange_token"]
+
+        if self._mock_enabled and exchange_token_jwt == "mocked_exchange_token":
             return JSONResponse(
                 {"uzi_id": "123456789", "loa_authn": SessionLoa.SUBSTANTIAL}
             )
@@ -412,3 +458,13 @@ class SessionService:
             login_title=claims["login_title"],
             oidc_provider_name=claims.get("oidc_provider_name"),
         )
+
+    @staticmethod
+    def _get_token_from_header(request: Request) -> str:
+        token = request.headers.get("Authorization")
+        if token is None:
+            logger.error("Token jwt is not found in header")
+            raise GeneralServerException()
+
+        jwt = token.split("Bearer ")[1]
+        return jwt

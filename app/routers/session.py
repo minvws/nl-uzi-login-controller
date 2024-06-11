@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import Response, JSONResponse
 
 from app.dependencies import session_service_
 from app.services.session_service import SessionService
@@ -17,22 +17,19 @@ async def session(
     """
     Create a new IRMA session
     """
-    request_body = await request.body()
-    if isinstance(request_body, bytes):
-        return session_service.create(request_body.decode("utf-8"))
-    raise HTTPException(status_code=403, detail="No valid content provided")
+    return session_service.create(request)
 
 
-@router.get("/{exchange_token}/status")
+@router.get("/status")
 async def session_status(
-    exchange_token: str,
+    request: Request,
     session_service: SessionService = Depends(lambda: session_service_),
-) -> JSONResponse:
+) -> Response:
     """
     Get the status of a session
     """
     try:
-        return session_service.status(exchange_token)
+        return session_service.status(request)
     except IrmaSessionExpired as exp:
         raise HTTPException(status_code=404, detail="Session expired") from exp
 
@@ -51,15 +48,15 @@ def irma_session(
         raise HTTPException(status_code=404, detail="Session expired") from exp
 
 
-@router.get("/{exchange_token}/result")
+@router.get("/results")
 def result(
-    exchange_token: str,
+    request: Request,
     session_service: SessionService = Depends(lambda: session_service_),
 ) -> Response:
     """
     Fetch the session result
     """
     try:
-        return session_service.result(exchange_token)
+        return session_service.result(request)
     except IrmaSessionExpired as exp:
         raise HTTPException(status_code=404, detail="Session expired") from exp

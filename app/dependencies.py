@@ -91,7 +91,6 @@ session_service_ = SessionService(
     jwt_audience=config["session"]["jwt_audience"],
     register_api_crt=REGISTER_API_CRT,
     register_api_issuer=REGISTER_API_ISSUER,
-    mock_enabled=config.getboolean("app", "mock_enabled"),
     template_service=template_service,
     session_server_events_enabled=config.getboolean(
         "irma", "session_server_events_enabled", fallback=False

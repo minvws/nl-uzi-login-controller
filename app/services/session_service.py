@@ -66,7 +66,6 @@ class SessionService:
         jwt_audience: str,
         register_api_crt: Optional[JWK],
         register_api_issuer: Optional[str],
-        mock_enabled: bool,
         template_service: TemplateService,
         session_server_events_enabled: bool = False,
         session_server_events_timeout: int = 2000,
@@ -83,7 +82,6 @@ class SessionService:
         self._jwt_issuer = jwt_issuer
         self._jwt_issuer_crt = jwt_issuer_crt
         self._jwt_audience = jwt_audience
-        self._mock_enabled = mock_enabled
         self._session_server_events_enabled = session_server_events_enabled
         self._session_server_events_timeout = session_server_events_timeout
         self._session_polling_interval = session_polling_interval
@@ -218,10 +216,6 @@ class SessionService:
 
         exchange_token: str = exchange_token_claims["exchange_token"]
 
-        if self._mock_enabled and exchange_token_jwt == "mocked_exchange_token":
-            return JSONResponse(
-                {"uzi_id": "123456789", "loa_authn": SessionLoa.SUBSTANTIAL}
-            )
         session = self._token_to_session(exchange_token)
         self._poll_status_irma(session)
         if session.session_status != SessionStatus.DONE:

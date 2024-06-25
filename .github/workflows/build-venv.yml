@@ -7,6 +7,9 @@ on:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        python_version: ['3.8','3.11']
     runs-on: ubuntu-20.04
     steps:
       - name: Set env
@@ -14,6 +17,11 @@ jobs:
           echo "PKG_NAME=`basename $GITHUB_REPOSITORY -private`" >> $GITHUB_ENV
 
       - uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python_version }}
 
       - name: Configure git
         run: git config --global url."https://${{ secrets.REPO_READ_ONLY_TOKEN }}@github.com/".insteadOf "ssh://git@github.com/"
@@ -34,10 +42,10 @@ jobs:
         run: cd /var/www/html; make venv
 
       - name: Create archive
-        run: cd /var/www/html; tar -czf /home/runner/work/${{ env.PKG_NAME }}/${{ github.event.repository.name }}/${{ github.event.repository.name }}_venv_${{ env.RELEASE_VERSION }}.tar.gz .venv
+        run: cd /var/www/html; tar -czf /home/runner/work/${{ github.event.repository.name }}/${{ github.event.repository.name }}/${{ env.PKG_NAME }}_venv_${{ env.RELEASE_VERSION }}_python${{ matrix.python_version }}.tar.gz .venv
 
       - name: Upload venv tar
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.PKG_NAME }}_venv_${{ env.RELEASE_VERSION }}
-          path: ${{ env.PKG_NAME }}_venv_${{ env.RELEASE_VERSION }}.tar.gz
+          name: ${{ env.PKG_NAME }}_venv_${{ env.RELEASE_VERSION }}_python${{ matrix.python_version }}
+          path: ${{ env.PKG_NAME }}_venv_${{ env.RELEASE_VERSION }}_python${{ matrix.python_version }}.tar.gz

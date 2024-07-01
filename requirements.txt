@@ -105,7 +105,7 @@ pydantic-core==2.19.0
     # via pydantic
 pyflakes==3.2.0
     # via autoflake
-pylint==3.2.3
+pylint==3.2.5
     # via app (setup.py)
 pytest==8.2.2
     # via app (setup.py)

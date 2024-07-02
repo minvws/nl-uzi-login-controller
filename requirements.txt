@@ -132,7 +132,7 @@ tomli==2.0.1
     #   pytest
 tomlkit==0.12.5
     # via pylint
-types-pyopenssl==23.0.0.4
+types-pyopenssl==24.1.0.20240425
     # via types-redis
 types-redis==4.6.0.20240425
     # via app (setup.py)

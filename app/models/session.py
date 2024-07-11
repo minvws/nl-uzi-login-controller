@@ -11,7 +11,7 @@ class SessionLoa(str, Enum):
 
 
 class SessionType(str, Enum):
-    IRMA = "irma"
+    YIVI = "yivi"
     UZI_CARD = "uzi_card"
     OIDC = "oidc"
 
@@ -27,8 +27,8 @@ class Session(BaseModel):
     session_type: SessionType
     login_title: str
     session_status: SessionStatus
-    irma_disclose_response: Optional[str] = None
-    irma_session_result: Optional[Dict[str, Any]] = None
+    yivi_disclose_response: Optional[str] = None
+    yivi_session_result: Optional[Dict[str, Any]] = None
     uzi_id: Optional[str] = None
     loa_authn: Optional[SessionLoa] = None
     oidc_provider_name: Optional[str] = None

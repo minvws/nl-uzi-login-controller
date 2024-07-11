@@ -1,7 +1,7 @@
 from configparser import ConfigParser
 
 
-from app.services.irma_service import IrmaService
+from app.services.yivi_service import YiviService
 from app.services.jwt_service import JwtService
 from app.services.oidc_service import OidcService
 from app.services.session_service import SessionService
@@ -71,19 +71,19 @@ template_service = TemplateService(
     vite_manifest_service=vite_manifest_service,
 )
 
-irma_service = IrmaService(
-    irma_internal_server_url=config["irma"]["irma_internal_server_url"],
-    irma_disclose_prefix=config["irma"]["irma_disclose_prefix"],
-    irma_revocation=bool(config["irma"]["irma_revocation"]),
+yivi_service = YiviService(
+    yivi_internal_server_url=config["yivi"]["yivi_internal_server_url"],
+    yivi_disclose_prefix=config["yivi"]["yivi_disclose_prefix"],
+    yivi_revocation=bool(config["yivi"]["yivi_revocation"]),
     http_timeout=http_timeout,
 )
 
 session_service_ = SessionService(
     redis_client=_redis_client,
-    irma_service=irma_service,
+    yivi_service=yivi_service,
     oidc_service=OIDC_SERVICE,
     jwt_service=JWT_SERVICE,
-    irma_disclose_prefix=config["irma"]["irma_disclose_prefix"],
+    yivi_disclose_prefix=config["yivi"]["yivi_disclose_prefix"],
     redis_namespace=config["redis"]["namespace"],
     expires_in_s=config.getint("redis", "expire", fallback=60),
     jwt_issuer=config["session"]["jwt_issuer"],
@@ -93,12 +93,12 @@ session_service_ = SessionService(
     register_api_issuer=REGISTER_API_ISSUER,
     template_service=template_service,
     session_server_events_enabled=config.getboolean(
-        "irma", "session_server_events_enabled", fallback=False
+        "yivi", "session_server_events_enabled", fallback=False
     ),
     session_server_events_timeout=config.getint(
-        "irma", "session_server_events_timeout", fallback=2000
+        "yivi", "session_server_events_timeout", fallback=2000
     ),
     session_polling_interval=config.getint(
-        "irma", "session_polling_interval", fallback=1000
+        "yivi", "session_polling_interval", fallback=1000
     ),
 )

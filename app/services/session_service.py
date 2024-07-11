@@ -17,9 +17,9 @@ from starlette.responses import RedirectResponse, Response
 from app.constants import EXP_LEAP_SECONDS, NBF_LEAP_SECONDS
 from app.exceptions.app_exceptions import (
     GeneralServerException,
-    IrmaServerException,
-    IrmaSessionExpired,
-    IrmaSessionNotCompleted,
+    YiviServerException,
+    YiviSessionExpired,
+    YiviSessionNotCompleted,
     LoginStateNotFoundException,
     SessionNotFoundException,
     InvalidJWTException,
@@ -35,7 +35,7 @@ from app.models.session import (
     SessionLoa,
     parse_session_type,
 )
-from app.services.irma_service import IrmaService
+from app.services.yivi_service import YiviService
 from app.services.jwt_service import JwtService, from_jwt
 from app.services.oidc_service import OidcService
 from app.services.template_service import TemplateService
@@ -55,10 +55,10 @@ class SessionService:
     def __init__(
         self,
         redis_client: Redis,
-        irma_service: IrmaService,
+        yivi_service: YiviService,
         oidc_service: Optional[OidcService],
         jwt_service: Optional[JwtService],
-        irma_disclose_prefix: str,
+        yivi_disclose_prefix: str,
         redis_namespace: str,
         expires_in_s: int,
         jwt_issuer: str,
@@ -73,10 +73,10 @@ class SessionService:
     ):
         self._templates = template_service.templates
         self._redis_client = redis_client
-        self._irma_service = irma_service
+        self._yivi_service = yivi_service
         self._oidc_service = oidc_service
         self._jwt_service = jwt_service
-        self._irma_disclose_prefix = irma_disclose_prefix
+        self._yivi_disclose_prefix = yivi_disclose_prefix
         self._redis_namespace = redis_namespace
         self._expires_in_s = expires_in_s
         self._jwt_issuer = jwt_issuer
@@ -102,8 +102,8 @@ class SessionService:
         )
 
         session = self._create_session_from_claims(claims)
-        if session.session_type == SessionType.IRMA:
-            session.irma_disclose_response = self._irma_service.create_disclose_session(
+        if session.session_type == SessionType.YIVI:
+            session.yivi_disclose_response = self._yivi_service.create_disclose_session(
                 [
                     {"disclose_type": "uziId"},
                     {"disclose_type": "roles"},
@@ -118,12 +118,12 @@ class SessionService:
         )
         return JSONResponse(session.exchange_token)
 
-    def irma(self, exchange_token: str) -> JSONResponse:
+    def yivi(self, exchange_token: str) -> JSONResponse:
         session = self._token_to_session(exchange_token)
-        if session.irma_disclose_response is None:
-            raise IrmaServerException()
-        irma_session = json.loads(session.irma_disclose_response)
-        return JSONResponse(irma_session["sessionPtr"])
+        if session.yivi_disclose_response is None:
+            raise YiviServerException()
+        yivi_session = json.loads(session.yivi_disclose_response)
+        return JSONResponse(yivi_session["sessionPtr"])
 
     def status(self, request: Request) -> Response:
         exchange_token_jwt = self._get_token_from_header(request)
@@ -146,7 +146,7 @@ class SessionService:
 
         exchange_token = exchange_token_claims.get("exchange_token", "")
         session = self._token_to_session(exchange_token)
-        self._poll_status_irma(session)
+        self._poll_status_yivi(session)
         return JSONResponse(session.session_status)
 
     def _token_to_session(self, token: str) -> Session:
@@ -154,31 +154,31 @@ class SessionService:
             f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{token}",
         )
         if not session_str:
-            raise IrmaSessionExpired()
+            raise YiviSessionExpired()
         session = Session.parse_raw(session_str)
         return session
 
-    def _poll_status_irma(self, session: Session) -> None:
+    def _poll_status_yivi(self, session: Session) -> None:
         if session.session_status == SessionStatus.DONE:
             return
 
-        if session.session_type == SessionType.IRMA:
-            if session.irma_disclose_response is None:
-                raise IrmaServerException()
-            irma_session_result = self._irma_service.fetch_disclose_result(
-                json.loads(session.irma_disclose_response)["token"]
+        if session.session_type == SessionType.YIVI:
+            if session.yivi_disclose_response is None:
+                raise YiviServerException()
+            yivi_session_result = self._yivi_service.fetch_disclose_result(
+                json.loads(session.yivi_disclose_response)["token"]
             )
-            if irma_session_result["status"] == "DONE":
-                session.irma_session_result = irma_session_result
-                for item in session.irma_session_result["disclosed"][0]:  # type: ignore
+            if yivi_session_result["status"] == "DONE":
+                session.yivi_session_result = yivi_session_result
+                for item in session.yivi_session_result["disclosed"][0]:  # type: ignore
                     if (
-                        item["id"].replace(self._irma_disclose_prefix + ".", "")
+                        item["id"].replace(self._yivi_disclose_prefix + ".", "")
                         == "uziId"
                     ):
                         session.uzi_id = item["rawvalue"]
 
                     if (
-                        item["id"].replace(self._irma_disclose_prefix + ".", "")
+                        item["id"].replace(self._yivi_disclose_prefix + ".", "")
                         == "loaAuthn"
                     ):
                         session.loa_authn = item["rawvalue"]
@@ -217,14 +217,14 @@ class SessionService:
         exchange_token: str = exchange_token_claims["exchange_token"]
 
         session = self._token_to_session(exchange_token)
-        self._poll_status_irma(session)
+        self._poll_status_yivi(session)
         if session.session_status != SessionStatus.DONE:
-            raise IrmaSessionNotCompleted()
+            raise YiviSessionNotCompleted()
         if session.uzi_id is None:
             raise GeneralServerException()
         return JSONResponse({"uzi_id": session.uzi_id, "loa_authn": session.loa_authn})
 
-    def login_irma(
+    def login_yivi(
         self, exchange_token: str, state: str, request: Request, redirect_url: str
     ) -> Response:
         session_str: Union[str, None] = self._redis_client.get(

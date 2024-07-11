@@ -3,7 +3,7 @@ from fastapi.responses import Response, JSONResponse
 
 from app.dependencies import session_service_
 from app.services.session_service import SessionService
-from app.exceptions.app_exceptions import IrmaSessionExpired
+from app.exceptions.app_exceptions import YiviSessionExpired
 
 
 router = APIRouter(prefix="/session", tags=["Session"])
@@ -15,7 +15,7 @@ async def session(
     session_service: SessionService = Depends(lambda: session_service_),
 ) -> JSONResponse:
     """
-    Create a new IRMA session
+    Create a new YIVI session
     """
     return session_service.create(request)
 
@@ -30,12 +30,12 @@ async def session_status(
     """
     try:
         return session_service.status(request)
-    except IrmaSessionExpired as exp:
+    except YiviSessionExpired as exp:
         raise HTTPException(status_code=404, detail="Session expired") from exp
 
 
 @router.get("/{exchange_token}/yivi")
-def irma_session(
+def yivi_session(
     exchange_token: str,
     session_service: SessionService = Depends(lambda: session_service_),
 ) -> JSONResponse:
@@ -43,8 +43,8 @@ def irma_session(
     Get the YIFI response from a session
     """
     try:
-        return session_service.irma(exchange_token)
-    except IrmaSessionExpired as exp:
+        return session_service.yivi(exchange_token)
+    except YiviSessionExpired as exp:
         raise HTTPException(status_code=404, detail="Session expired") from exp
 
 
@@ -58,5 +58,5 @@ def result(
     """
     try:
         return session_service.result(request)
-    except IrmaSessionExpired as exp:
+    except YiviSessionExpired as exp:
         raise HTTPException(status_code=404, detail="Session expired") from exp

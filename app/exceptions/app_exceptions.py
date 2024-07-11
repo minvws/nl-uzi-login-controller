@@ -147,19 +147,19 @@ class GeneralServerException(Exception):
         super().__init__("Unable to fetch response from Server")
 
 
-class IrmaServerException(Exception):
+class YiviServerException(Exception):
     def __init__(self) -> None:
-        super().__init__("Unable to fetch response from IrmaServer")
+        super().__init__("Unable to fetch response from YiviServer")
 
 
-class IrmaSessionExpired(Exception):
+class YiviSessionExpired(Exception):
     def __init__(self) -> None:
-        super().__init__("Irma session expired")
+        super().__init__("Yivi session expired")
 
 
-class IrmaSessionNotCompleted(Exception):
+class YiviSessionNotCompleted(Exception):
     def __init__(self) -> None:
-        super().__init__("Irma session not completed")
+        super().__init__("Yivi session not completed")
 
 
 class InvalidStateException(Exception):

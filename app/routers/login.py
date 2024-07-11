@@ -22,7 +22,7 @@ def page(
     """
     Fetch the login page
     """
-    return session_service.login_irma(exchange_token, state, request, redirect_url)
+    return session_service.login_yivi(exchange_token, state, request, redirect_url)
 
 
 @router.get("/uzi/{exchange_token}", response_model=None)

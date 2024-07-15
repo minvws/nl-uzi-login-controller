@@ -45,7 +45,7 @@ cryptography==42.0.8
     #   types-redis
 dill==0.3.8
     # via pylint
-exceptiongroup==1.2.1
+exceptiongroup==1.2.2
     # via
     #   anyio
     #   pytest

@@ -32,7 +32,7 @@ click==8.1.7
     # via
     #   black
     #   uvicorn
-coverage==7.5.4
+coverage==7.6.0
     # via
     #   app (setup.py)
     #   coverage-badge

@@ -13,6 +13,7 @@ from app.models.docs_config import DocsConfig
 from app.routers import session
 from app.routers import login
 from app.routers.docs_router import DocsRouter
+from app.routers.main import router as main_router
 from app.utils import get_version_from_config
 
 
@@ -34,6 +35,7 @@ def run_app() -> FastAPI:
         openapi_url=docs_config.openapi_endpoint,
         version=version,
     )
+    fastapi.include_router(main_router)
     fastapi.include_router(session.router)
     fastapi.include_router(login.router)
     if docs_config.enabled:

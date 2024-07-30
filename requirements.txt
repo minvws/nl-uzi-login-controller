@@ -107,7 +107,7 @@ pyflakes==3.2.0
     # via autoflake
 pylint==3.2.6
     # via app (setup.py)
-pytest==8.3.1
+pytest==8.3.2
     # via app (setup.py)
 pyyaml==6.0.1
     # via bandit

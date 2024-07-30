@@ -10,16 +10,42 @@ on:
     branches: [ develop, main ]
 
 jobs:
-  code-quality:
-    runs-on: ubuntu-20.04
+  install-requirements:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        python_version: ['3.8','3.10','3.11']
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.8'
-          cache: 'pip' # caching pip dependencies
+          python-version: ${{ matrix.python_version }}
+          cache: 'pip'
+
+      - name: Configure git
+        run: git config --global url."https://${{ secrets.REPO_READ_ONLY_TOKEN }}@github.com/".insteadOf "ssh://git@github.com/"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install libxmlsec1-dev pkg-config
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r requirements.txt
+
+  code-quality:
+    runs-on: ubuntu-22.04
+    needs:
+      - install-requirements
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python_version }}
+          cache: 'pip'
 
       - name: Configure git
         run: git config --global url."https://${{ secrets.REPO_READ_ONLY_TOKEN }}@github.com/".insteadOf "ssh://git@github.com/"
@@ -39,16 +65,19 @@ jobs:
 
       - name: Audit with bandid
         run: make audit
+
   tests:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
+    needs:
+      - install-requirements
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.8'
-          cache: 'pip' # caching pip dependencies
+          python-version: ${{ matrix.python_version }}
+          cache: 'pip'
 
       - name: Configure git
         run: git config --global url."https://${{ secrets.REPO_READ_ONLY_TOKEN }}@github.com/".insteadOf "ssh://git@github.com/"

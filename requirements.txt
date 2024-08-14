@@ -14,7 +14,7 @@ astroid==3.2.4
     # via pylint
 async-timeout==4.0.3
     # via redis
-attrs==23.2.0
+attrs==24.2.0
     # via pytest
 autoflake==2.3.1
     # via app (setup.py)

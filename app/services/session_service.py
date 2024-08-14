@@ -18,14 +18,13 @@ from app.constants import EXP_LEAP_SECONDS, NBF_LEAP_SECONDS
 from app.exceptions.app_exceptions import (
     GeneralServerException,
     YiviServerException,
-    YiviSessionExpired,
-    YiviSessionNotCompleted,
+    SessionExpired,
+    SessionNotCompleted,
     LoginStateNotFoundException,
     SessionNotFoundException,
     InvalidJWTException,
     ServiceUnavailableException,
     InvalidRequestException,
-    ProviderPublicKeyNotFound,
 )
 
 from app.models.session import (
@@ -36,7 +35,7 @@ from app.models.session import (
     parse_session_type,
 )
 from app.services.yivi_service import YiviService
-from app.services.jwt_service import JwtService, from_jwt
+from app.services.jwt_service import from_jwt
 from app.services.oidc_service import OidcService
 from app.services.template_service import TemplateService
 from app.utils import rand_pass
@@ -57,15 +56,16 @@ class SessionService:
         redis_client: Redis,
         yivi_service: YiviService,
         oidc_service: Optional[OidcService],
-        jwt_service: Optional[JwtService],
         yivi_disclose_prefix: str,
         redis_namespace: str,
         expires_in_s: int,
         jwt_issuer: str,
         jwt_issuer_crt: JWK,
         jwt_audience: str,
-        register_api_crt: Optional[JWK],
-        register_api_issuer: Optional[str],
+        register_api_crt: JWK,
+        session_result_jwt_issuer: str,
+        session_result_jwt_audience: str,
+        signed_userinfo_issuer: Optional[str],
         template_service: TemplateService,
         session_server_events_enabled: bool = False,
         session_server_events_timeout: int = 2000,
@@ -75,7 +75,6 @@ class SessionService:
         self._redis_client = redis_client
         self._yivi_service = yivi_service
         self._oidc_service = oidc_service
-        self._jwt_service = jwt_service
         self._yivi_disclose_prefix = yivi_disclose_prefix
         self._redis_namespace = redis_namespace
         self._expires_in_s = expires_in_s
@@ -86,7 +85,9 @@ class SessionService:
         self._session_server_events_timeout = session_server_events_timeout
         self._session_polling_interval = session_polling_interval
         self._register_api_crt = register_api_crt
-        self._register_api_issuer = register_api_issuer
+        self._session_result_jwt_issuer = session_result_jwt_issuer
+        self._session_result_jwt_audience = session_result_jwt_audience
+        self._signed_userinfo_issuer = signed_userinfo_issuer
 
     def create(self, request: Request) -> JSONResponse:
         raw_jwt = self._get_token_from_header(request)
@@ -102,6 +103,12 @@ class SessionService:
         )
 
         session = self._create_session_from_claims(claims)
+
+        if session.session_type == SessionType.OIDC and self._oidc_service is None:
+            return JSONResponse(
+                status_code=400, content={"message": "Login method not allowed"}
+            )
+
         if session.session_type == SessionType.YIVI:
             session.yivi_disclose_response = self._yivi_service.create_disclose_session(
                 [
@@ -127,12 +134,10 @@ class SessionService:
 
     def status(self, request: Request) -> Response:
         exchange_token_jwt = self._get_token_from_header(request)
-        if self._oidc_service is None or self._jwt_service is None:
-            return Response(status_code=404)
 
-        exchange_token_claims = self._jwt_service.from_jwt(
+        exchange_token_claims = from_jwt(
             jwt_pub_key=self._jwt_issuer_crt,
-            jwt=exchange_token_jwt,
+            jwt_str=exchange_token_jwt,
             check_claims={
                 "iss": self._jwt_issuer,
                 "aud": self._jwt_audience,
@@ -154,8 +159,8 @@ class SessionService:
             f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{token}",
         )
         if not session_str:
-            raise YiviSessionExpired()
-        session = Session.parse_raw(session_str)
+            raise SessionExpired()
+        session = Session.model_validate_json(session_str)
         return session
 
     def _poll_status_yivi(self, session: Session) -> None:
@@ -192,19 +197,12 @@ class SessionService:
 
     def result(self, request: Request) -> Response:
         exchange_token_jwt = self._get_token_from_header(request)
-        if self._oidc_service is None or self._jwt_service is None:
-            return Response(status_code=404)
-
-        if self._register_api_crt is None:
-            logger.error("Register api crt is not found")
-            raise GeneralServerException()
-
-        exchange_token_claims = self._jwt_service.from_jwt(
+        exchange_token_claims = from_jwt(
             jwt_pub_key=self._register_api_crt,
-            jwt=exchange_token_jwt,
+            jwt_str=exchange_token_jwt,
             check_claims={
-                "iss": self._register_api_issuer,
-                "aud": self._jwt_audience,
+                "iss": self._session_result_jwt_issuer,
+                "aud": self._session_result_jwt_audience,
                 "nbf": int(time.time()) - NBF_LEAP_SECONDS,
                 "exp": int(time.time()) + EXP_LEAP_SECONDS,
             },
@@ -217,9 +215,10 @@ class SessionService:
         exchange_token: str = exchange_token_claims["exchange_token"]
 
         session = self._token_to_session(exchange_token)
+
         self._poll_status_yivi(session)
         if session.session_status != SessionStatus.DONE:
-            raise YiviSessionNotCompleted()
+            raise SessionNotCompleted()
         if session.uzi_id is None:
             raise GeneralServerException()
         return JSONResponse({"uzi_id": session.uzi_id, "loa_authn": session.loa_authn})
@@ -233,7 +232,7 @@ class SessionService:
         if not session_str:
             raise SessionNotFoundException(state=state)
 
-        session = Session.parse_raw(session_str)
+        session = Session.model_validate_json(session_str)
         return self._templates.TemplateResponse(
             "login.html",
             {
@@ -258,7 +257,7 @@ class SessionService:
         if not session_str:
             raise SessionNotFoundException(state=state)
 
-        session: Session = Session.parse_raw(session_str)
+        session: Session = Session.model_validate_json(session_str)
         if not session.session_type == SessionType.UZI_CARD:
             return HTTPException(status_code=404)
         session.session_status = SessionStatus.DONE
@@ -282,8 +281,7 @@ class SessionService:
         state: str,
         redirect_url: str,
     ) -> Union[Response, HTTPException]:
-        # check if oidc_login_method_feature is enabled
-        if self._oidc_service is None or self._jwt_service is None:
+        if self._oidc_service is None:
             return Response(status_code=404)
 
         session = self._get_session_from_redis(exchange_token)
@@ -319,12 +317,7 @@ class SessionService:
     def login_oidc_callback(
         self, oidc_state: str, code: str
     ) -> Union[Response, HTTPException]:
-        # check if oidc_login_method_feature is enabled
-        if (
-            self._oidc_service is None
-            or self._jwt_service is None
-            or self._register_api_crt is None
-        ):
+        if self._oidc_service is None:
             return Response(status_code=404)
 
         login_state = self._get_login_state_from_redis(oidc_state)
@@ -346,35 +339,24 @@ class SessionService:
             logger.warning("Session type is not OIDC")
             return HTTPException(status_code=404)
 
-        oidc_provider_name: str = session.oidc_provider_name  # type: ignore
-        userinfo_jwt = self._oidc_service.get_userinfo(
+        oidc_provider_name = session.oidc_provider_name
+        if oidc_provider_name is None:
+            raise InvalidRequestException(
+                state=state, error_description="missing OIDC provider name in session"
+            )
+
+        oidc_provider_userinfo_jwt = self._oidc_service.get_userinfo(
             oidc_provider_name, code, code_verifier, state
         )
 
-        oidc_provider_public_key = self._oidc_service.get_oidc_provider_public_key(
-            oidc_provider_name
-        )
-        if oidc_provider_public_key is None:
-            raise ProviderPublicKeyNotFound(
-                state=state, provider_name=oidc_provider_name
-            )
-
-        try:
-            claims = self._jwt_service.from_jwe(oidc_provider_public_key, userinfo_jwt)
-        except Exception as exception:
-            logger.error(exception)
-            raise InvalidJWTException(
-                state=state, log_message="Unable to decrypt userinfo JWE"
-            ) from exception
-        if claims is None:
-            raise InvalidJWTException(
-                state=state, log_message="Invalid claims from userinfo JWE"
-            )
-
-        signed_userinfo = self._jwt_service.from_jwt(
+        signed_userinfo = from_jwt(
             self._register_api_crt,
-            claims["signed_userinfo"],
-            {"iss": self._register_api_issuer, "exp": time.time(), "nbf": time.time()},
+            oidc_provider_userinfo_jwt["signed_userinfo"],
+            {
+                "iss": self._signed_userinfo_issuer,
+                "exp": time.time(),
+                "nbf": time.time(),
+            },
         )
         if signed_userinfo is None:
             raise InvalidJWTException(
@@ -422,7 +404,7 @@ class SessionService:
         if not session_str:
             return None
 
-        session: Session = Session.parse_raw(session_str)
+        session: Session = Session.model_validate_json(session_str)
         return session
 
     def _get_login_state_from_redis(self, state: str) -> Optional[LoginState]:

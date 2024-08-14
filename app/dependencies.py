@@ -1,5 +1,5 @@
 from configparser import ConfigParser
-
+from typing import Optional
 
 from app.services.yivi_service import YiviService
 from app.services.jwt_service import JwtService
@@ -29,27 +29,29 @@ _jwt_issuer_cert = load_jwk(config["session"]["jwt_issuer_crt_path"])
 
 oidc_login_method_feature = config.getboolean("app", "oidc_login_method_feature")
 
-JWT_SERVICE = None
-OIDC_SERVICE = None
-REGISTER_API_CRT = None
-REGISTER_API_ISSUER = None
+REGISTER_API_CRT = load_jwk(config.get("register", "register_api_crt_path"))
+SESSION_RESULT_JWT_ISSUER = config.get("register", "session_result_jwt_issuer")
+SESSION_RESULT_JWT_AUDIENCE = config.get("register", "session_result_jwt_audience")
+
+OIDC_SERVICE: Optional[OidcService] = None
+SIGNED_USERINFO_ISSUER: Optional[str] = None
 
 if oidc_login_method_feature:
-    jwt_priv_key = load_jwk(config.get("app", "jwt_priv_key_path"))
-    jwt_crt_content = file_content_raise_if_none(config.get("app", "jwt_crt_path"))
-    REGISTER_API_CRT = load_jwk(config.get("oidc_provider", "register_api_crt_path"))
-    REGISTER_API_ISSUER = config.get("oidc_provider", "register_api_jwt_issuer")
+    jwt_priv_key = load_jwk(config.get("oidc_provider", "jwt_priv_key_path"))
+    jwt_crt_content = file_content_raise_if_none(
+        config.get("oidc_provider", "jwt_crt_path")
+    )
+    JWT_SERVICE = JwtService(
+        jwt_priv_key=jwt_priv_key, crt_kid=kid_from_certificate(jwt_crt_content)
+    )
 
-    # fetch and load providers
+    SIGNED_USERINFO_ISSUER = config.get("oidc_provider", "signed_userinfo_issuer")
+
     providers_conf_path = config.get("oidc_provider", "config_list_path")
     oidc_providers = load_oidc_well_known_config(
         providers_config_path=providers_conf_path,
         environment=environment,
         http_timout=http_timeout,
-    )
-
-    JWT_SERVICE = JwtService(
-        jwt_priv_key=jwt_priv_key, crt_kid=kid_from_certificate(jwt_crt_content)
     )
 
     OIDC_SERVICE = OidcService(
@@ -82,7 +84,6 @@ session_service_ = SessionService(
     redis_client=_redis_client,
     yivi_service=yivi_service,
     oidc_service=OIDC_SERVICE,
-    jwt_service=JWT_SERVICE,
     yivi_disclose_prefix=config["yivi"]["yivi_disclose_prefix"],
     redis_namespace=config["redis"]["namespace"],
     expires_in_s=config.getint("redis", "expire", fallback=60),
@@ -90,7 +91,9 @@ session_service_ = SessionService(
     jwt_issuer_crt=_jwt_issuer_cert,
     jwt_audience=config["session"]["jwt_audience"],
     register_api_crt=REGISTER_API_CRT,
-    register_api_issuer=REGISTER_API_ISSUER,
+    session_result_jwt_issuer=SESSION_RESULT_JWT_ISSUER,
+    session_result_jwt_audience=SESSION_RESULT_JWT_AUDIENCE,
+    signed_userinfo_issuer=SIGNED_USERINFO_ISSUER,
     template_service=template_service,
     session_server_events_enabled=config.getboolean(
         "yivi", "session_server_events_enabled", fallback=False

@@ -10,6 +10,7 @@ from app.exceptions.oidc_error_constants import (
     SESSION_NOT_FOUND_ERROR,
     TEMPORARILY_UNAVAILABLE,
     SERVER_ERROR,
+    UNAUTHORIZED_CLIENT,
 )
 
 config = ConfigParser()
@@ -152,14 +153,14 @@ class YiviServerException(Exception):
         super().__init__("Unable to fetch response from YiviServer")
 
 
-class YiviSessionExpired(Exception):
+class SessionExpired(Exception):
     def __init__(self) -> None:
         super().__init__("Yivi session expired")
 
 
-class YiviSessionNotCompleted(Exception):
+class SessionNotCompleted(Exception):
     def __init__(self) -> None:
-        super().__init__("Yivi session not completed")
+        super().__init__("Session not completed")
 
 
 class InvalidStateException(Exception):
@@ -173,4 +174,13 @@ class LoginStateNotFoundException(RedirectBaseException):
             error=ACCESS_DENIED,
             state="NOTFOUND",
             error_description="Login state not found or expired",
+        )
+
+
+class LoginMethodNotAllowedException(RedirectBaseException):
+    def __init__(self) -> None:
+        super().__init__(
+            error=UNAUTHORIZED_CLIENT,
+            state="NOTFOUND",
+            error_description="Login method not allowed",
         )

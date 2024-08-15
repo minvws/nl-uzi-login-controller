@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 import requests
 
 from fastapi.exceptions import RequestValidationError
@@ -12,6 +12,8 @@ from app.exceptions.app_exceptions import (
     ProviderConfigNotFound,
     ProviderNotFound,
     ClientScopeException,
+    ProviderPublicKeyNotFound,
+    InvalidJWTException,
 )
 from app.models.enums import TokenEndpointAuthenticationMethods
 from app.models.oidc_provider import OIDCProvider, OIDCProviderDiscovery
@@ -23,7 +25,6 @@ logger = logging.getLogger(__name__)
 
 
 class OidcService:
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         oidc_providers: Dict[str, OIDCProvider],
@@ -84,7 +85,7 @@ class OidcService:
 
     def get_userinfo(
         self, oidc_provider_name: str, code: str, code_verifier: str, max_state: str
-    ) -> str:
+    ) -> Dict[str, Any]:
         provider = self._get_oidc_provider(oidc_provider_name)
         if provider is None:
             raise ProviderNotFound(max_state)
@@ -122,7 +123,7 @@ class OidcService:
             data["client_secret"] = client_secret
 
         resp = requests.post(
-            provider_well_known_config.token_endpoint,  # type: ignore
+            provider_well_known_config.token_endpoint,
             timeout=self._http_timeout,
             data=data,
             verify=provider.verify_ssl,
@@ -139,7 +140,31 @@ class OidcService:
 
         if resp.headers["Content-Type"] != "application/jwt":
             raise RequestValidationError("Unsupported media type")
-        return resp.text
+
+        oidc_provider_userinfo_jwe = resp.text
+
+        oidc_provider_public_key = self.get_oidc_provider_public_key(oidc_provider_name)
+        if oidc_provider_public_key is None:
+            raise ProviderPublicKeyNotFound(
+                state=max_state,
+                provider_name=oidc_provider_name,
+            )
+
+        try:
+            oidc_provider_userinfo_jwt = self._jwt_service.from_jwe(
+                oidc_provider_public_key,
+                oidc_provider_userinfo_jwe,
+            )
+        except Exception as exception:
+            raise InvalidJWTException(
+                state=max_state, log_message="Unable to decrypt userinfo JWE"
+            ) from exception
+        if oidc_provider_userinfo_jwt is None:
+            raise InvalidJWTException(
+                state=max_state, log_message="Invalid claims from userinfo JWE"
+            )
+
+        return oidc_provider_userinfo_jwt
 
     def _update_and_get_authorization_url(
         self, oidc_provider_name: str, params: AuthorizationParams, max_state: str

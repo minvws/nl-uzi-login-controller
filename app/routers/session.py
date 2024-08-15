@@ -3,7 +3,7 @@ from fastapi.responses import Response, JSONResponse
 
 from app.dependencies import session_service_
 from app.services.session_service import SessionService
-from app.exceptions.app_exceptions import YiviSessionExpired
+from app.exceptions.app_exceptions import SessionExpired
 
 
 router = APIRouter(prefix="/session", tags=["Session"])
@@ -15,7 +15,7 @@ async def session(
     session_service: SessionService = Depends(lambda: session_service_),
 ) -> JSONResponse:
     """
-    Create a new YIVI session
+    Create a new session
     """
     return session_service.create(request)
 
@@ -30,7 +30,7 @@ async def session_status(
     """
     try:
         return session_service.status(request)
-    except YiviSessionExpired as exp:
+    except SessionExpired as exp:
         raise HTTPException(status_code=404, detail="Session expired") from exp
 
 
@@ -44,7 +44,7 @@ def yivi_session(
     """
     try:
         return session_service.yivi(exchange_token)
-    except YiviSessionExpired as exp:
+    except SessionExpired as exp:
         raise HTTPException(status_code=404, detail="Session expired") from exp
 
 
@@ -58,5 +58,5 @@ def result(
     """
     try:
         return session_service.result(request)
-    except YiviSessionExpired as exp:
+    except SessionExpired as exp:
         raise HTTPException(status_code=404, detail="Session expired") from exp

@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    tags: [ v* ]
+  pull_request:
+
+jobs:
+  validate_npm:
+    name: Build & validate npm
+    runs-on: ubuntu-22.04
+    env:
+      node_version: '20'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.node_version }}
+          cache: "npm"
+          
+      - run: npm audit
+
+      - run: npm ci --ignore-scripts
+
+      - run: npm run build
+
+  validate_python:
+    name: Validate Python
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        python_version: ['3.8','3.10','3.11']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python_version }}
+          cache: 'pip'
+
+      - name: Configure git
+        run: git config --global url."https://${{ secrets.REPO_READ_ONLY_TOKEN }}@github.com/".insteadOf "ssh://git@github.com/"
+
+      - name: Install dependencies
+        if: always()
+        run: |
+          sudo apt-get update
+          sudo apt-get install libxmlsec1-dev pkg-config
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r requirements.txt
+          make venv
+
+      - name: Lint with pylint
+        run: make lint
+
+      - name: Type check with MyPy
+        run: make type-check
+
+      - name: Audit with bandit
+        run: make audit
+
+      - name: Setup settings and secrets
+        run: make setup
+
+      - name: Test with unittest
+        run: make test
+
+  sonar:
+    name: SonarCloud
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run SonarCloud scanner
+        uses: minvws/nl-irealisatie-generic-pipelines/.github/actions/sonarcloud@main
+        with:
+          sonar-token: ${{ secrets.SONAR_TOKEN }}

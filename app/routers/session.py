@@ -40,7 +40,7 @@ def yivi_session(
     session_service: SessionService = Depends(lambda: session_service_),
 ) -> JSONResponse:
     """
-    Get the YIFI response from a session
+    Get the Yivi response from a session
     """
     try:
         return session_service.yivi(exchange_token)

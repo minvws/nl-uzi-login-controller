@@ -2,12 +2,7 @@ env = env PATH="${bin}:$$PATH"
 
 venv: .venv/touchfile ## Create virtual environment
 .venv/touchfile:
-	test -d .venv || python3 -m venv .venv
-	. .venv/bin/activate; pip install -U pip
-	. .venv/bin/activate; pip install pip-tools
-	. .venv/bin/activate && ${env} pip-compile --extra dev
-	. .venv/bin/activate && ${env} pip-sync
-	. .venv/bin/activate && ${env} pip install -e .
+	test -d .venv || poetry install
 	touch .venv/touchfile
 
 clean_venv: ## Remove virtual environment
@@ -18,11 +13,6 @@ run:
 	docker-compose up -d
 	npm run build
 	. .venv/bin/activate && ${env} python -m app.main
-
-pip-sync: ## synchronizes the .venv with the state of requirements.txt
-	. .venv/bin/activate && ${env} pip-compile --extra dev
-	. .venv/bin/activate && ${env} pip-sync
-	. .venv/bin/activate && ${env} pip install -e .
 
 setup-npm:
 	scripts/./setup-npm.sh
@@ -38,23 +28,20 @@ oidc-providers-list.json:
 version.json:
 	cp static/version.json.example static/version.json
 
-lint:
-	. .venv/bin/activate && ${env} pylint app
-	. .venv/bin/activate && ${env} black --check app
+check:
+	poetry run pylint app
+	poetry run black --check app tests
 
 audit:
-	. .venv/bin/activate && ${env} bandit app
+	poetry run bandit -r app
 
 fix:
-	. .venv/bin/activate && $(env) black app tests
+	poetry run black app tests
 
-test: venv setup
-	. .venv/bin/activate && ${env} pytest tests
+test:
+	poetry run pytest --cov --cov-report=term --cov-report=xml
 
 type-check:
-	. .venv/bin/activate && ${env} MYPYPATH=stubs/ mypy --disallow-untyped-defs --show-error-codes app
+	poetry run mypy
 
-coverage:
-	. .venv/bin/activate && ${env} coverage run -m pytest tests && coverage report && coverage html
-
-check-all: fix lint type-check test audit
+check-all: fix check type-check test audit

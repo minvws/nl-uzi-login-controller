@@ -68,6 +68,7 @@ class OIDCProvider:
     oidc_provider_public_key: JWK
     token_endpoint_auth_method: str
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         client_id: str,

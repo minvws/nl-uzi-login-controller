@@ -86,7 +86,15 @@ def json_fetch_url(
     while retry <= retries:
         try:
             if retry > 0:
-                time.sleep((backoff_time + random.randint(1, 3)) ^ retry)
+                time.sleep(
+                    (
+                        backoff_time
+                        + random.randint(
+                            1, 3
+                        )  # nosec B311 - random is used for retry backoff
+                    )
+                    ^ retry
+                )
             response = requests.get(url, timeout=http_timeout, verify=verify_ssl)
             validate_response_code(response.status_code)
             return response.json()

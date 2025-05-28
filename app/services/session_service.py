@@ -121,7 +121,7 @@ class SessionService:
 
         self._redis_client.set(
             f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{session.exchange_token}",
-            session.json(),
+            session.model_dump_json(),
             ex=self._expires_in_s,
         )
         return JSONResponse(session.exchange_token)
@@ -191,7 +191,7 @@ class SessionService:
 
                 self._redis_client.set(
                     f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{session.exchange_token}",
-                    session.json(),
+                    session.model_dump_json(),
                     ex=self._expires_in_s,
                 )
                 session.session_status = SessionStatus.DONE

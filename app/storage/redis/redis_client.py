@@ -22,7 +22,7 @@ def create_redis_client(redis_settings: SectionProxy) -> Redis:
     if redis_settings.getboolean("ssl"):
         return Redis(
             host=redis_settings["host"],
-            port=redis_settings.getint("port"),
+            port=redis_settings.getint("port", fallback=6379),
             db=0,
             ssl=True,
             ssl_keyfile=redis_settings["key"],

@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import json
 import logging
 import time
@@ -50,7 +51,7 @@ config.read("app.conf")
 
 # pylint: disable=too-many-instance-attributes
 class SessionService:
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         redis_client: Redis,
@@ -120,7 +121,7 @@ class SessionService:
 
         self._redis_client.set(
             f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{session.exchange_token}",
-            session.json(),
+            session.model_dump_json(),
             ex=self._expires_in_s,
         )
         return JSONResponse(session.exchange_token)
@@ -190,7 +191,7 @@ class SessionService:
 
                 self._redis_client.set(
                     f"{self._redis_namespace}:{REDIS_SESSION_KEY}:{session.exchange_token}",
-                    session.json(),
+                    session.model_dump_json(),
                     ex=self._expires_in_s,
                 )
                 session.session_status = SessionStatus.DONE

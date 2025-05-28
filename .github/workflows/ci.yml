@@ -7,74 +7,70 @@ on:
     tags: [ v* ]
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  validate_npm:
-    name: Build & validate npm
-    runs-on: ubuntu-22.04
-    env:
-      node_version: '20'
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.node_version }}
-          cache: "npm"
-          
-      - run: npm audit
-
-      - run: npm ci --ignore-scripts
-
-      - run: npm run build
-
-  validate_python:
-    name: Validate Python
-    runs-on: ubuntu-22.04
+  validate:
     strategy:
       matrix:
-        python_version: ['3.8','3.10','3.11']
-    steps:
-      - uses: actions/checkout@v4
+        python_version: ['3.10','3.11.2']
 
-      - uses: actions/setup-python@v5
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          python-version: ${{ matrix.python_version }}
-          cache: 'pip'
+          fetch-depth: 0
+
+      - name: Prepare environment
+        run: |
+          sudo apt-get update
 
       - name: Configure git
         run: git config --global url."https://${{ secrets.REPO_READ_ONLY_TOKEN }}@github.com/".insteadOf "ssh://git@github.com/"
 
-      - name: Install dependencies
-        if: always()
+      - name: Run build action
+        uses: minvws/nl-irealisatie-generic-pipelines/.github/actions/poetry-install@main
+        with:
+          python_version: ${{ matrix.python_version }}
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: npm audit
+        run: npm audit
+
+      - name: npm ci
+        run: npm ci --ignore-scripts
+
+      - name: npm run build
+        run: npm run build
+
+      - name: Setup config
         run: |
-          sudo apt-get update
-          sudo apt-get install libxmlsec1-dev pkg-config
-          python -m pip install --upgrade pip setuptools wheel
-          pip install -r requirements.txt
-          make venv
+          make app.conf
+          make oidc-providers-list.json
+          make version.json
+          bash scripts/setup-secrets.sh
 
-      - name: Lint with pylint
-        run: make lint
+      - name: Linting (pylint & black)
+        run: make check
 
-      - name: Type check with MyPy
+      - name: Typing (mypy)
         run: make type-check
 
-      - name: Audit with bandit
+      - name: Audit (bandit)
         run: make audit
 
-      - name: Setup settings and secrets
-        run: make setup
-
-      - name: Test with unittest
+      - name: Unit testing (pytest)
         run: make test
 
-  sonar:
-    name: SonarCloud
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - name: Run SonarCloud scanner
         uses: minvws/nl-irealisatie-generic-pipelines/.github/actions/sonarcloud@main
         with:

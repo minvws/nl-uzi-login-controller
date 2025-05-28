@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class OidcService:
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         oidc_providers: Dict[str, OIDCProvider],

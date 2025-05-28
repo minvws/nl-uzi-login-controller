@@ -54,6 +54,13 @@ jobs:
       - name: npm run build
         run: npm run build
 
+      - name: Setup config
+        run: |
+          make app.conf
+          make oidc-providers-list.json
+          make version.json
+          bash scripts/setup-secrets.sh
+
       - name: Linting (pylint & black)
         run: make check
 

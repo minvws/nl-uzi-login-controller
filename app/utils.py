@@ -4,6 +4,7 @@ import base64
 import json
 import secrets
 import time
+import logging
 from os import path
 from typing import Union, Any, Dict, Optional
 from configparser import ConfigParser
@@ -14,6 +15,8 @@ import requests
 
 from app.models.oidc_provider import OIDCProvider, OIDCProviderDiscovery
 from app.exceptions.app_exceptions import UnexpectedResponseCode
+
+logger = logging.getLogger(__name__)
 
 
 def rand_pass(size: int) -> str:
@@ -126,13 +129,23 @@ def load_oidc_well_known_config(
         discovery: Union[dict, None] = None
 
         try:
+            logger.info(
+                "Fetching OIDC config for provider %s from URL: %s",
+                provider.get("name", "<unknown>"),
+                provider_config_url,
+            )
             discovery = json_fetch_url(
                 url=provider_config_url,
                 verify_ssl=provider["verify_ssl"],
                 http_timeout=http_timout,
             )
-        except requests.ConnectionError:
-            pass
+        except Exception as e:  # pylint: disable=broad-except
+            logger.exception(
+                "Exception occurred while fetching OIDC config for provider %s from URL: %s. Exception: %s",
+                provider.get("name", "<unknown>"),
+                provider_config_url,
+                e,
+            )
 
         provider_data = OIDCProvider(
             verify_ssl=verify_ssl,

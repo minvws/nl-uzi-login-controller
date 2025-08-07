@@ -2,6 +2,7 @@
 # possible environment values are: development, production
 environment = development
 base_url = http://localhost:8001
+# continue url of max
 redirect_url = https://localhost:8006/continue
 
 http_timeout = 30
@@ -10,6 +11,8 @@ http_backof_time = 5
 
 loglevel = debug
 
+# Enable of disable the ZSM OIDC login method feature.
+# The settings under the [oidc_provider] section needs to be set up correctly
 oidc_login_method_feature = False
 
 include_log_message_in_error_response = True
@@ -60,39 +63,57 @@ workers = 1
 use_ssl = False
 
 # Setting for the SSL connection when enabled, defined by the use_ssl setting.
+# Directory containing SSL secrets (certificates and keys)
 base_dir = secrets/ssl
+# Server SSL certificate file name (relative to base_dir)
 cert_file = server.crt
+# Server SSL private key file name (relative to base_dir)
 key_file = server.key
+# File patterns to reload when configuration changes
 reload_includes = *.conf *.json
 
-# required when oidc_login_method_feature feature is enabled
+# Section for ZSM OIDC (OpenID Connect) provider configuration
+# Required when oidc_login_method_feature is enabled
 [oidc_provider]
-# path to OIDC configuration list
+# Path to the OIDC providers configuration list (JSON format)
 config_list_path=oidc-providers-list.json
-redirect_uri = http://localhost:8001/login/oidc/callback
 
+# Path to private key used for signing JWTs for authentication to the OIDC provider
+# This key is used if the provider `token_endpoint_auth_method` is set to `private_key_jwt`
 jwt_priv_key_path = secrets/nl-uzi-login-controller.key
+# Path to certificate used for setting the kid in the signed JWT
 jwt_crt_path = secrets/nl-uzi-login-controller.crt
 
-# register_api_jwt_issuer is the issuer that issued the signed_userinfo that is wrapped inside the jwt and is provided by the ZSM OIDC Provider.
-# The intended audience is unknown because it does not matter to whom the signed_userinfo was provided as long as the issuer is valid.
+# The issuer of the JWT inside the signed_userinfo claim, provided by ZSM OIDC Provider in the userinfo.
+# This should match the register issuer as they provide the signed userinfo JWT to the ZSM OIDC Provider.
+# The audience is not relevant; only the issuer and the signing certificate matters for validation.
 signed_userinfo_issuer = max
 
-
+# Section for template configuration
 [templates]
+# Directory containing Jinja2 templates
 jinja_path = jinja2
+# Path to Vite manifest file for static assets
 vite_manifest_path = static/assets/manifest.json
 
+# Section for API documentation endpoints
 [docs]
+# Enable or disable documentation endpoints
 enabled = True
+# URL endpoint for Swagger UI documentation
 swagger_ui_endpoint = /docs
+# URL endpoint for Redoc documentation
 redoc_endpoint = /redoc
+# URL endpoint for OpenAPI specification
 openapi_endpoint = /openapi.json
 
+# Section for register configuration
+# The register connects to the login controller to the session result endpoint with an signed JWT.
 [register]
-# register certificate path
+# Path to register certificate
+# This certificate is used to verify the signature of the JWTs from the register.
 register_api_crt_path = secrets/nl-uzipoc-register-api.crt
 
-# uzi register JWT issuer
+# validate the the issuer and audience in the received JWT from the register
 session_result_jwt_issuer = uzipoc_register
 session_result_jwt_audience = nl-uzi-login-controller

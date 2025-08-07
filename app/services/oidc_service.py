@@ -30,12 +30,13 @@ class OidcService:
         self,
         oidc_providers: Dict[str, OIDCProvider],
         jwt_service: JwtService,
-        redirect_uri: str,
+        base_url: str,
         http_timeout: int,
         http_retries: int,
         http_backof_time: int,
     ):
-        self._redirect_uri = redirect_uri
+        # The url of the oidc callback route
+        self._redirect_uri = base_url + "/login/oidc/callback"
         self._http_timeout = http_timeout
         self._oidc_providers = oidc_providers
         self._jwt_service = jwt_service

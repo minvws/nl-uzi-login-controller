@@ -22,6 +22,7 @@ config.read("app.conf")
 http_timeout = config.getint("app", "http_timeout", fallback=30)
 environment = config.get("app", "environment")
 
+base_url = config.get("app", "base_url")
 redirect_url_ = config.get("app", "redirect_url")
 
 _redis_client = create_redis_client(config["redis"])
@@ -56,7 +57,7 @@ if oidc_login_method_feature:
 
     OIDC_SERVICE = OidcService(
         oidc_providers=oidc_providers,
-        redirect_uri=config["oidc_provider"]["redirect_uri"],
+        base_url=base_url,
         http_timeout=http_timeout,
         jwt_service=JWT_SERVICE,
         http_retries=config.getint("app", "http_retries", fallback=20),
@@ -64,7 +65,7 @@ if oidc_login_method_feature:
     )
 
 vite_manifest_service = ViteManifestService(
-    base_url=config["app"]["base_url"],
+    base_url=base_url,
     manifest=json_from_file(config.get("templates", "vite_manifest_path")),
 )
 

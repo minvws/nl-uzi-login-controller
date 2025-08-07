@@ -69,7 +69,6 @@ reload_includes = *.conf *.json
 [oidc_provider]
 # path to OIDC configuration list
 config_list_path=oidc-providers-list.json
-redirect_uri = http://localhost:8001/login/oidc/callback
 
 jwt_priv_key_path = secrets/nl-uzi-login-controller.key
 jwt_crt_path = secrets/nl-uzi-login-controller.crt

@@ -85,8 +85,9 @@ jwt_priv_key_path = secrets/nl-uzi-login-controller.key
 jwt_crt_path = secrets/nl-uzi-login-controller.crt
 
 # The issuer of the JWT inside the signed_userinfo claim, provided by ZSM OIDC Provider in the userinfo.
-# This should match the register issuer as they provide the signed userinfo JWT to the ZSM OIDC Provider.
-# The audience is not relevant; only the issuer and the signing certificate matters for validation.
+# For the POC, this should be the same issuer as configured in max.
+# The audience is not relevant for this POC, for the future this should be the OIDC Provider;
+# Currently only the issuer and the signing certificate matters for validation.
 signed_userinfo_issuer = max
 
 # Section for template configuration

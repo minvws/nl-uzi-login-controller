@@ -1,18 +1,13 @@
-env = env PATH="${bin}:$$PATH"
-
-venv: .venv/touchfile ## Create virtual environment
-.venv/touchfile:
-	test -d .venv || poetry install
-	touch .venv/touchfile
+venv: ## Create virtual environment
+	poetry install
 
 clean_venv: ## Remove virtual environment
-	@echo "Cleaning venv"
-	@rm -rf .venv
+	poetry env remove
 
 run:
 	docker-compose up -d
 	npm run build
-	. .venv/bin/activate && ${env} python -m app.main
+	poetry run python -m app.main
 
 setup-npm:
 	scripts/./setup-npm.sh

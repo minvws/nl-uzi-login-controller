@@ -1,5 +1,6 @@
 from configparser import ConfigParser
 from typing import Optional
+import urllib.parse
 
 from app.services.yivi_service import YiviService
 from app.services.jwt_service import JwtService
@@ -15,6 +16,65 @@ from app.utils import (
     load_oidc_well_known_config,
     json_from_file,
 )
+from app.models.yivi_authentication_config import YiviAuthenticationConfig
+
+
+def _parse_hostname(raw_base_url: str) -> str:
+    """Extracts the hostname from a base URL."""
+    parsed_url = urllib.parse.urlparse(raw_base_url)
+    if not parsed_url.hostname:
+        raise ValueError(f"Invalid base URL: {raw_base_url}")
+    return parsed_url.hostname
+
+
+def _parse_yivi_auth_config(
+    config_parser: ConfigParser,
+) -> Optional[YiviAuthenticationConfig]:
+    """Parse Yivi authentication configuration.
+
+    Returns a YiviAuthenticationConfig if authentication is enabled; otherwise None.
+
+    Raises:
+        ValueError: if authentication is enabled but required fields are missing/invalid.
+    """
+    if not config_parser.getboolean(
+        "yivi", "yivi_authentication_enabled", fallback=False
+    ):
+        return None
+
+    priv_key_path = config_parser.get(
+        "yivi", "yivi_authentication_priv_key_path", fallback=None
+    )
+    if not priv_key_path:
+        raise ValueError(
+            "Yivi authentication is enabled, but 'yivi_authentication_priv_key_path' is not configured."
+        )
+    issuer = config_parser.get("yivi", "yivi_authentication_issuer", fallback=None)
+    if not isinstance(issuer, str) or len(issuer) == 0:
+        raise ValueError(
+            "Yivi authentication is enabled, but 'yivi_authentication_issuer' is missing."
+        )
+    priv_key = load_jwk(priv_key_path)
+    return YiviAuthenticationConfig(issuer=issuer, priv_key=priv_key)
+
+
+def create_yivi_service_from_config(
+    application_host: str, config_parser: ConfigParser, timeout: int
+) -> YiviService:
+    """Creates and configures the YiviService from a config object."""
+    auth_config = _parse_yivi_auth_config(config_parser)
+
+    return YiviService(
+        application_host=application_host,
+        yivi_internal_server_url=config_parser["yivi"]["yivi_internal_server_url"],
+        yivi_disclose_prefix=config_parser["yivi"]["yivi_disclose_prefix"],
+        request_nonrevocation_proof=config_parser.getboolean(
+            "yivi", "yivi_revocation", fallback=False
+        ),
+        http_timeout=timeout,
+        authentication_config=auth_config,
+    )
+
 
 config = ConfigParser()
 config.read("app.conf")
@@ -23,6 +83,7 @@ http_timeout = config.getint("app", "http_timeout", fallback=30)
 environment = config.get("app", "environment")
 
 base_url = config.get("app", "base_url")
+host = _parse_hostname(base_url)
 redirect_url_ = config.get("app", "redirect_url")
 
 _redis_client = create_redis_client(config["redis"])
@@ -74,12 +135,7 @@ template_service = TemplateService(
     vite_manifest_service=vite_manifest_service,
 )
 
-yivi_service = YiviService(
-    yivi_internal_server_url=config["yivi"]["yivi_internal_server_url"],
-    yivi_disclose_prefix=config["yivi"]["yivi_disclose_prefix"],
-    yivi_revocation=bool(config["yivi"]["yivi_revocation"]),
-    http_timeout=http_timeout,
-)
+yivi_service = create_yivi_service_from_config(host, config, http_timeout)
 
 session_service_ = SessionService(
     redis_client=_redis_client,

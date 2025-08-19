@@ -83,6 +83,7 @@ def create_jwt(
     }
     jwt_payload = {
         **{
+            "iat": int(time.time()),
             "nbf": int(time.time()) - JWT_NBF_MARGIN,
             "exp": int(time.time()) + JWT_EXP_MARGIN,
         },

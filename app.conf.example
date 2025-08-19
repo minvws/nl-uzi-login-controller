@@ -43,6 +43,14 @@ expire = 300
 yivi_internal_server_url = https://yivi.proeftuin.uzi-online.rdobeheer.nl
 yivi_disclose_prefix = irma-demo.uzipoc-cibg.uzi-proeftuin
 yivi_revocation = true
+# Enable or disable authentication for Yivi server requests
+# See Yivi documentation about te requestor authentication: https://docs.yivi.app/irma-server/#requestor-authentication
+# If enabled, requests will be signed as JWS using the specified private key and issuer
+yivi_authentication_enabled = False
+# Issuer value to use in the JWS for Yivi authentication
+yivi_authentication_issuer =
+# Path to the private key used for signing JWS for Yivi authentication
+yivi_authentication_priv_key_path =
 # If session_server_events_enabled = True: use Server Sent Events for checking the status of the Yivi session during login
 session_server_events_enabled = True
 # After ... ms the front-end should stop trying to check session status through Server Sent Events in case of failure

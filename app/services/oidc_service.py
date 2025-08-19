@@ -1,5 +1,4 @@
 import logging
-import time
 from typing import Dict, Optional, Any
 import requests
 
@@ -117,7 +116,6 @@ class OidcService:
                     "iss": provider.client_id,
                     "sub": provider.client_id,
                     "aud": provider_well_known_config.issuer,
-                    "exp": int(time.time()),
                 }
             )
 
@@ -125,7 +123,7 @@ class OidcService:
             data["client_secret"] = client_secret
 
         resp = requests.post(
-            provider_well_known_config.token_endpoint,
+            url=provider_well_known_config.token_endpoint,
             timeout=self._http_timeout,
             data=data,
             verify=provider.verify_ssl,

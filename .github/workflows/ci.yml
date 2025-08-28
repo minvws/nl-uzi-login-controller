@@ -36,7 +36,7 @@ jobs:
         run: git config --global url."https://${{ secrets.REPO_READ_ONLY_TOKEN }}@github.com/".insteadOf "ssh://git@github.com/"
 
       - name: Run build action
-        uses: minvws/nl-irealisatie-generic-pipelines/.github/actions/poetry-install@main
+        uses: minvws/action-python-poetry-install@v1
         with:
           python_version: ${{ matrix.python_version }}
 

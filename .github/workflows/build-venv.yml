@@ -19,7 +19,7 @@ jobs:
         run: git config --global url."https://${{ secrets.REPO_READ_ONLY_TOKEN }}@github.com/".insteadOf "ssh://git@github.com/"
 
       - name: Build venv package
-        uses: minvws/nl-irealisatie-generic-pipelines/.github/actions/python-venv-package@main
+        uses: minvws/action-python-venv-package@v1
         with:
           python_version: ${{ matrix.python_version }}
           package_file_name: ${{ env.PKG_NAME }}

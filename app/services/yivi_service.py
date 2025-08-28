@@ -71,7 +71,7 @@ class YiviService:
             jws_token = JWT(header={"alg": "RS256"}, claims=payload)
             jws_token.make_signed_token(self._authentication_config.priv_key)
             data = jws_token.serialize()
-            headers["Content-Type"] = "application/jose"
+            headers["Content-Type"] = "text/plain"
 
         yivi_response = requests.post(
             url=f"{self._yivi_internal_server_url}/session",

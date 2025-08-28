@@ -75,7 +75,7 @@ def requested_disclosures_empty() -> List[Dict[str, str]]:
 @pytest.fixture(scope="session")
 def yivi_signed_request_headers() -> Dict[str, str]:
     """Returns headers for a signed Yivi request (JWS)."""
-    return {"Content-Type": "application/jose"}
+    return {"Content-Type": "text/plain"}
 
 
 @pytest.fixture(scope="session")

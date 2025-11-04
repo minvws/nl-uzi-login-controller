@@ -142,8 +142,8 @@ class SessionService:
             check_claims={
                 "iss": self._jwt_issuer,
                 "aud": self._jwt_audience,
-                "nbf": int(time.time()) - NBF_LEAP_SECONDS,
-                "exp": int(time.time()) + EXP_LEAP_SECONDS,
+                "nbf": int(time.time()) + NBF_LEAP_SECONDS,
+                "exp": int(time.time()) - EXP_LEAP_SECONDS,
             },
         )
         if exchange_token_claims is None:
@@ -204,8 +204,8 @@ class SessionService:
             check_claims={
                 "iss": self._session_result_jwt_issuer,
                 "aud": self._session_result_jwt_audience,
-                "nbf": int(time.time()) - NBF_LEAP_SECONDS,
-                "exp": int(time.time()) + EXP_LEAP_SECONDS,
+                "nbf": int(time.time()) + NBF_LEAP_SECONDS,
+                "exp": int(time.time()) - EXP_LEAP_SECONDS,
             },
         )
 

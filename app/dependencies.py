@@ -91,12 +91,12 @@ _jwt_issuer_cert = load_jwk(config["session"]["jwt_issuer_crt_path"])
 
 oidc_login_method_feature = config.getboolean("app", "oidc_login_method_feature")
 
-REGISTER_API_CRT = load_jwk(config.get("register", "register_api_crt_path"))
-SESSION_RESULT_JWT_ISSUER = config.get("register", "session_result_jwt_issuer")
-SESSION_RESULT_JWT_AUDIENCE = config.get("register", "session_result_jwt_audience")
+_register_api_crt = load_jwk(config.get("register", "register_api_crt_path"))
+_session_result_jwt_issuer = config.get("register", "session_result_jwt_issuer")
+_session_result_jwt_audience = config.get("register", "session_result_jwt_audience")
 
-OIDC_SERVICE: Optional[OidcService] = None
-SIGNED_USERINFO_ISSUER: Optional[str] = None
+_oidc_service: Optional[OidcService] = None
+_signed_userinfo_issuer: Optional[str] = None
 
 if oidc_login_method_feature:
     jwt_priv_key = load_jwk(config.get("oidc_provider", "jwt_priv_key_path"))
@@ -107,7 +107,7 @@ if oidc_login_method_feature:
         jwt_priv_key=jwt_priv_key, crt_kid=kid_from_certificate(jwt_crt_content)
     )
 
-    SIGNED_USERINFO_ISSUER = config.get("oidc_provider", "signed_userinfo_issuer")
+    _signed_userinfo_issuer = config.get("oidc_provider", "signed_userinfo_issuer")
 
     providers_conf_path = config.get("oidc_provider", "config_list_path")
     oidc_providers = load_oidc_well_known_config(
@@ -116,7 +116,7 @@ if oidc_login_method_feature:
         http_timout=http_timeout,
     )
 
-    OIDC_SERVICE = OidcService(
+    _oidc_service = OidcService(
         oidc_providers=oidc_providers,
         base_url=base_url,
         http_timeout=http_timeout,
@@ -140,17 +140,17 @@ yivi_service = create_yivi_service_from_config(host, config, http_timeout)
 session_service_ = SessionService(
     redis_client=_redis_client,
     yivi_service=yivi_service,
-    oidc_service=OIDC_SERVICE,
+    oidc_service=_oidc_service,
     yivi_disclose_prefix=config["yivi"]["yivi_disclose_prefix"],
     redis_namespace=config["redis"]["namespace"],
     expires_in_s=config.getint("redis", "expire", fallback=60),
     jwt_issuer=config["session"]["jwt_issuer"],
     jwt_issuer_crt=_jwt_issuer_cert,
     jwt_audience=config["session"]["jwt_audience"],
-    register_api_crt=REGISTER_API_CRT,
-    session_result_jwt_issuer=SESSION_RESULT_JWT_ISSUER,
-    session_result_jwt_audience=SESSION_RESULT_JWT_AUDIENCE,
-    signed_userinfo_issuer=SIGNED_USERINFO_ISSUER,
+    register_api_crt=_register_api_crt,
+    session_result_jwt_issuer=_session_result_jwt_issuer,
+    session_result_jwt_audience=_session_result_jwt_audience,
+    signed_userinfo_issuer=_signed_userinfo_issuer,
     template_service=template_service,
     session_server_events_enabled=config.getboolean(
         "yivi", "session_server_events_enabled", fallback=False
